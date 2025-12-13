@@ -37,7 +37,7 @@
             height: 100vh;
             color: var(--text-main);
             -webkit-tap-highlight-color: transparent;
-            touch-action: none; /* 禁止全局默认触摸，为了拖拽 */
+            touch-action: none;
         }
 
         /* --- 2. 加载屏幕 --- */
@@ -198,7 +198,7 @@
             pointer-events: auto; 
         }
 
-        /* --- 动画定义：上浮渐显 --- */
+        /* 动画定义：上浮渐显 */
         @keyframes slideUpFade {
             0% {
                 opacity: 0;
@@ -217,13 +217,13 @@
             text-align: center; 
         }
         
-        /* 1. 卡片先出 */
+        /* 卡片先出 */
         #overlay-detail.active .flip-scene {
             animation: slideUpFade 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
             opacity: 0; 
         }
 
-        /* 2. 标题和文本 同时出 (0.15秒延迟) */
+        /* 标题和文本同时出 */
         #overlay-detail.active #showcase-title,
         #overlay-detail.active .info-desc {
             animation: slideUpFade 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) 0.15s forwards;
@@ -402,37 +402,27 @@
             z-index: 55; 
             filter: drop-shadow(0 15px 15px rgba(0,0,0,0.2)); 
             pointer-events: none; 
-            transition: transform 0.05s ease-out;
+            will-change: transform;
         }
 
-        /* --- 修改点：游戏掉落物尺寸放大 --- */
+        /* 游戏掉落物 - 性能优化版 */
         .drop-item {
             position: absolute; 
-            width: 80px;  /* 从55改到80 */
+            width: 80px; /* 游戏图片放大 */
             height: 80px; 
             object-fit: contain; 
             z-index: 52;
-            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2)); 
             pointer-events: none; 
-            will-change: transform, top;
+            will-change: transform;
+            /* 减少重绘：使用 transform 而非 filter 做动画 */
         }
         
         .drop-item.danger { 
-            animation: danger-pulse 1s infinite alternate ease-in-out; 
-        }
-        
-        @keyframes danger-pulse { 
-            0% { filter: drop-shadow(0 0 3px #000) drop-shadow(0 0 5px #8b0000); } 
-            100% { filter: drop-shadow(0 0 5px #000) drop-shadow(0 0 12px #ff0000); } 
+            filter: drop-shadow(0 0 4px #8b0000);
         }
         
         .drop-item.good { 
-            animation: good-glow 2s infinite alternate ease-in-out; 
-        }
-        
-        @keyframes good-glow { 
-            0% { filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2)); } 
-            100% { filter: drop-shadow(0 0 8px rgba(255,215,0,0.3)) drop-shadow(2px 2px 4px rgba(0,0,0,0.2)); } 
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
         }
 
         #game-countdown {
@@ -476,12 +466,6 @@
         }
 
         /* --- 5. 详情展示组件 --- */
-        .showcase-container { 
-            width: 90%; 
-            max-width: 400px; 
-            text-align: center; 
-        }
-        
         .flip-scene { 
             width: 280px; 
             height: 380px; 
@@ -533,7 +517,6 @@
             display: block;
         }
         
-        /* --- 修改点：恢复文本滑动 --- */
         .secret-content { 
             font-family: "Songti SC", "SimSun", serif; 
             font-size: 1.05rem;
@@ -545,9 +528,9 @@
             scrollbar-width: thin; 
             padding-top: 2px;
             margin-top: 30px;
-            /* 关键修改：允许触摸滚动，允许文本选择 */
             touch-action: pan-y;
             user-select: text;
+            -webkit-user-select: text;
         }
         
         .secret-content::-webkit-scrollbar {
@@ -572,7 +555,6 @@
             font-family: 'MainType'; 
         }
         
-        /* --- 修改点：恢复文本滑动 --- */
         .info-desc { 
             margin-top: 10px; 
             font-size: 0.95rem; 
@@ -581,9 +563,9 @@
             overflow-y: auto; 
             text-align: left; 
             scrollbar-width: thin;
-            /* 关键修改：允许触摸滚动，允许文本选择 */
             touch-action: pan-y;
             user-select: text;
+            -webkit-user-select: text;
         }
         
         .info-desc::-webkit-scrollbar {
@@ -598,8 +580,7 @@
         /* 移动端适配 */
         @media (max-width: 600px) {
             #player-bag { width: 110px; }
-            /* --- 修改点：移动端游戏掉落物也对应放大 --- */
-            .drop-item { width: 65px; height: 65px; } /* 从45改到65 */
+            .drop-item { width: 65px; height: 65px; } /* 移动端游戏物品尺寸 */
             .modal-box { padding: 30px 20px; }
             .modal-title { font-size: 1.3rem; }
             .modal-desc { font-size: 1rem; }
@@ -632,7 +613,6 @@
         <!-- 物品详情弹窗 -->
         <div id="overlay-detail" class="overlay-mask" onclick="if(event.target.id==='overlay-detail') archive.closeOverlay()">
             <div class="showcase-container">
-                <!-- 注意：这里的 onclick 只负责翻转，openOverlay 会负责重置为正面 -->
                 <div class="flip-scene" onclick="event.stopPropagation(); archive.flipCard()">
                     <div class="flip-card" id="flip-card">
                         <div class="card-face card-front">
@@ -702,12 +682,13 @@
     <script>
         // ==================== 配置 ====================
         const CONFIG = {
-            SPAWN_INTERVAL: 700, 
+            SPAWN_INTERVAL: 800,  // 略微增加生成间隔
             BASE_SPEED: 2.5, 
             GOOD_SCORE: 5, 
             BAD_PENALTY: 15, 
             WIN_THRESHOLD: 100,
-            DRAG_THRESHOLD: 5, 
+            DRAG_THRESHOLD: 5,
+            MAX_DROP_ITEMS: 20  // 限制同屏最大掉落数
         };
 
         // ==================== 资源 ====================
@@ -758,220 +739,493 @@
             { id: "medical", img: assets.medical, name: "挂号单", type: 'good', realSize: 170, desc: "复查左臂旧伤的挂号单。<br>可能是那次检查后顺手揣进兜里，忘了拿出来。", secret: "军属也有享有免费医疗的资格，当然仅限于配偶和子女。<br>袁朗不会把这项优待当作和他结婚的好处之一，也不想让它成为你衡量的条件。<br><br>但生活不光是理想主义中纯粹的爱情，必要时刻，他也希望这个身份给你一些帮助和便利。" }
         ];
 
-        // ==================== 逻辑处理 ====================
+        // ==================== 档案展示模块 ====================
         const archive = {
             isOrganized: false,
             itemsElements: [],
-            dragState: null,
 
             init: function() {
                 const desktop = document.getElementById('desktop');
                 const fragment = document.createDocumentFragment();
+                
                 itemsData.forEach((item) => {
                     const img = document.createElement('img');
                     img.src = item.img;
                     img.className = 'item';
+                    img.alt = item.name;
                     img.style.width = (item.realSize || 80) + 'px';
                     img.style.left = (Math.random() * 80 + 10) + '%';
                     img.style.top = (Math.random() * 70 + 10) + '%';
                     img.style.transform = `translate(-50%, -50%) rotate(${(Math.random() - 0.5) * 60}deg)`;
+                    
                     this.makeDraggable(img, item);
+                    
+                    img.onerror = function() {
+                        console.warn(`图片加载失败: ${item.name}`);
+                        this.style.display = 'none';
+                    };
+                    
                     fragment.appendChild(img);
                     this.itemsElements.push(img);
                 });
+                
                 desktop.appendChild(fragment);
                 this.createDust();
             },
+
             makeDraggable: function(el, itemData) {
-                let dx=0, dy=0, sx=0, sy=0, moved=false, dragging=false;
+                let startX = 0, startY = 0, moved = false, dragging = false;
+                
                 const down = (e) => {
-                    if(document.querySelector('.overlay-mask.active')) return;
-                    dragging = true; moved = false;
-                    const p = e.type.includes('touch')?e.touches[0]:e;
-                    sx=p.clientX; sy=p.clientY;
-                    const r = el.getBoundingClientRect();
-                    el.style.left = (r.left+r.width/2)+'px';
-                    el.style.top = (r.top+r.height/2)+'px';
+                    if (document.querySelector('.overlay-mask.active')) return;
+                    
+                    dragging = true;
+                    moved = false;
+                    
+                    const point = e.type.includes('touch') ? e.touches[0] : e;
+                    startX = point.clientX;
+                    startY = point.clientY;
+                    
+                    const rect = el.getBoundingClientRect();
+                    el.style.left = (rect.left + rect.width / 2) + 'px';
+                    el.style.top = (rect.top + rect.height / 2) + 'px';
+                    
                     el.classList.add('dragging');
+                    
                     document.addEventListener('mousemove', move);
-                    document.addEventListener('touchmove', move, {passive:false});
+                    document.addEventListener('touchmove', move, { passive: false });
                     document.addEventListener('mouseup', up);
                     document.addEventListener('touchend', up);
                 };
+                
                 const move = (e) => {
-                    if(!dragging) return;
-                    const p = e.type.includes('touch')?e.touches[0]:e;
-                    if(!moved && (Math.abs(p.clientX-sx)>5 || Math.abs(p.clientY-sy)>5)) moved=true;
-                    if(moved){
-                        el.style.left = (parseFloat(el.style.left)+(p.clientX-sx))+'px';
-                        el.style.top = (parseFloat(el.style.top)+(p.clientY-sy))+'px';
-                        sx=p.clientX; sy=p.clientY;
+                    if (!dragging) return;
+                    
+                    const point = e.type.includes('touch') ? e.touches[0] : e;
+                    const dx = point.clientX - startX;
+                    const dy = point.clientY - startY;
+                    
+                    if (!moved && (Math.abs(dx) > CONFIG.DRAG_THRESHOLD || Math.abs(dy) > CONFIG.DRAG_THRESHOLD)) {
+                        moved = true;
+                    }
+                    
+                    if (moved) {
+                        el.style.left = (parseFloat(el.style.left) + point.clientX - startX) + 'px';
+                        el.style.top = (parseFloat(el.style.top) + point.clientY - startY) + 'px';
+                        startX = point.clientX;
+                        startY = point.clientY;
                         e.preventDefault();
                     }
                 };
+                
                 const up = () => {
-                    dragging=false; el.classList.remove('dragging');
+                    dragging = false;
+                    el.classList.remove('dragging');
+                    
                     document.removeEventListener('mousemove', move);
                     document.removeEventListener('touchmove', move);
                     document.removeEventListener('mouseup', up);
                     document.removeEventListener('touchend', up);
-                    if(!moved) this.openOverlay(itemData);
+                    
+                    if (!moved) {
+                        this.openOverlay(itemData);
+                    }
                 };
+                
                 el.addEventListener('mousedown', down);
-                el.addEventListener('touchstart', down, {passive:false});
+                el.addEventListener('touchstart', down, { passive: false });
             },
+
             toggleOrganize: function() {
                 const btn = document.getElementById('btn-organize');
                 const w = window.innerWidth;
-                if(this.isOrganized){
-                    this.itemsElements.forEach(el=>{
+                
+                if (this.isOrganized) {
+                    // 打乱
+                    this.itemsElements.forEach(el => {
                         el.classList.add('animating');
-                        el.style.left=Math.random()*80+10+'%'; el.style.top=Math.random()*70+10+'%';
-                        el.style.transform=`translate(-50%,-50%) rotate(${(Math.random()-0.5)*60}deg)`;
-                        setTimeout(()=>el.classList.remove('animating'),500);
+                        el.style.left = Math.random() * 80 + 10 + '%';
+                        el.style.top = Math.random() * 70 + 10 + '%';
+                        el.style.transform = `translate(-50%, -50%) rotate(${(Math.random() - 0.5) * 60}deg)`;
+                        setTimeout(() => el.classList.remove('animating'), 500);
                     });
-                    btn.textContent="归纳物品";
+                    btn.textContent = "归纳物品";
                 } else {
-                    const cols=Math.min(5,Math.floor(w/120)), sp=100, st=(w-(cols*sp-sp))/2;
-                    this.itemsElements.forEach((el,i)=>{
+                    // 归纳
+                    const cols = Math.min(5, Math.floor(w / 120));
+                    const spacing = 100;
+                    const startLeft = (w - (cols * spacing - spacing)) / 2;
+                    
+                    this.itemsElements.forEach((el, i) => {
                         el.classList.add('animating');
-                        el.style.left=(st+(i%cols)*sp)+'px'; el.style.top=(120+Math.floor(i/cols)*sp)+'px';
-                        el.style.transform='translate(-50%,-50%) rotate(0deg)';
-                        setTimeout(()=>el.classList.remove('animating'),500);
+                        el.style.left = (startLeft + (i % cols) * spacing) + 'px';
+                        el.style.top = (120 + Math.floor(i / cols) * spacing) + 'px';
+                        el.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+                        setTimeout(() => el.classList.remove('animating'), 500);
                     });
-                    btn.textContent="打乱物品";
+                    btn.textContent = "打乱物品";
                 }
-                this.isOrganized=!this.isOrganized;
+                
+                this.isOrganized = !this.isOrganized;
             },
+
             createDust: function() {
-                const c = document.getElementById('dust-container');
-                for(let i=0;i<20;i++){
-                    const d=document.createElement('div'); d.className='dust';
-                    const s=Math.random()*5+2; d.style.width=d.style.height=s+'px';
-                    d.style.left=Math.random()*100+'vw'; d.style.top=Math.random()*100+'vh';
-                    d.style.animationDuration=(15+Math.random()*20)+'s';
-                    c.appendChild(d);
+                const container = document.getElementById('dust-container');
+                for (let i = 0; i < 20; i++) {
+                    const dust = document.createElement('div');
+                    dust.className = 'dust';
+                    const size = Math.random() * 5 + 2;
+                    dust.style.width = size + 'px';
+                    dust.style.height = size + 'px';
+                    dust.style.left = Math.random() * 100 + 'vw';
+                    dust.style.top = Math.random() * 100 + 'vh';
+                    dust.style.animationDuration = (15 + Math.random() * 20) + 's';
+                    dust.style.animationDelay = Math.random() * 5 + 's';
+                    container.appendChild(dust);
                 }
             },
+
             openOverlay: function(item) {
-                document.getElementById('showcase-img').src=item.img;
-                document.getElementById('showcase-title').textContent=item.name;
-                document.getElementById('showcase-desc').innerHTML=item.desc;
-                document.getElementById('showcase-secret').innerHTML=item.secret;
-                // 强制重置翻转状态为正面
-                document.getElementById('flip-card').classList.remove('flipped');
-                document.getElementById('overlay-detail').classList.add('active');
+                const overlay = document.getElementById('overlay-detail');
+                const flipCard = document.getElementById('flip-card');
+                
+                // 先移除翻转状态，确保显示正面
+                flipCard.classList.remove('flipped');
+                
+                // 然后更新内容
+                document.getElementById('showcase-img').src = item.img;
+                document.getElementById('showcase-title').textContent = item.name;
+                document.getElementById('showcase-desc').innerHTML = item.desc;
+                document.getElementById('showcase-secret').innerHTML = item.secret;
+                
+                // 最后显示弹窗
+                overlay.classList.add('active');
             },
-            closeOverlay: function() { document.getElementById('overlay-detail').classList.remove('active'); },
-            flipCard: function() { document.getElementById('flip-card').classList.toggle('flipped'); }
+
+            closeOverlay: function() {
+                document.getElementById('overlay-detail').classList.remove('active');
+            },
+
+            flipCard: function() {
+                document.getElementById('flip-card').classList.toggle('flipped');
+            }
         };
 
+        // ==================== 游戏UI控制模块 ====================
         const gameUI = {
-            showIntro: ()=>document.getElementById('overlay-intro').classList.add('active'),
-            hideIntro: ()=>document.getElementById('overlay-intro').classList.remove('active'),
-            startCountdown: (cb)=>{
-                const o=document.getElementById('game-countdown'), t=document.getElementById('countdown-text');
-                o.style.display='flex'; let c=3; t.textContent=c;
-                const timer=setInterval(()=>{
-                    c--; 
-                    if(c>0){ t.textContent=c; t.style.animation='none'; void t.offsetHeight; t.style.animation='popIn 0.5s'; }
-                    else if(c===0) t.textContent='开始!';
-                    else { clearInterval(timer); o.style.display='none'; cb(); }
-                },1000);
+            showIntro: () => document.getElementById('overlay-intro').classList.add('active'),
+            hideIntro: () => document.getElementById('overlay-intro').classList.remove('active'),
+            
+            startCountdown: (callback) => {
+                const overlay = document.getElementById('game-countdown');
+                const text = document.getElementById('countdown-text');
+                overlay.style.display = 'flex';
+                
+                let count = 3;
+                text.textContent = count;
+                
+                const timer = setInterval(() => {
+                    count--;
+                    if (count > 0) {
+                        text.textContent = count;
+                        text.style.animation = 'none';
+                        void text.offsetHeight;
+                        text.style.animation = 'popIn 0.5s';
+                    } else if (count === 0) {
+                        text.textContent = '开始!';
+                    } else {
+                        clearInterval(timer);
+                        overlay.style.display = 'none';
+                        callback();
+                    }
+                }, 1000);
             },
-            updateBar: (v)=>{
-                const f=document.getElementById('satisfaction-bar'), c=Math.max(0,Math.min(100,v));
-                f.style.width=c+'%';
-                f.style.background=c<30?'linear-gradient(90deg,#ff6b6b,#d04e4e)':c<70?'linear-gradient(90deg,#d04e4e,#8b0000)':'linear-gradient(90deg,#4ecdc4,#44a08d)';
-            },
-            showResult: (type)=>{
-                const t=document.getElementById('result-title'), txt=document.getElementById('result-text');
-                if(type==='lose'){
-                    t.textContent="挑战失败";
-                    txt.textContent=`袁朗看着包里越来越多的硬中华和打火机，挑眉笑了笑，伸手捉住了你的手腕，力道不大，但让你动弹不得。\n\n“行了首长，差不多得了。您这是搞后勤呢，还是打算谋杀亲夫啊？再装下去，我就不是去出任务，是去开烟草博览会了。”`;
-                } else if(type==='win_with_bad'){
-                    t.textContent="圆满完成";
-                    txt.textContent=`袁朗掂了掂包的分量，听到里面打火机碰撞的脆响，眼底闪过一丝得逞的笑意。他顺势将包甩到肩后，一把将你揽进怀里用力揉了揉。\n\n“这就对了，我就知道还是自家人心疼我。那些规矩是给南瓜们定的，咱不理那个……走了，等我回来。”`;
+            
+            updateBar: (value) => {
+                const fill = document.getElementById('satisfaction-bar');
+                const clamped = Math.max(0, Math.min(100, value));
+                fill.style.width = clamped + '%';
+                
+                if (clamped < 30) {
+                    fill.style.background = 'linear-gradient(90deg, #ff6b6b, #d04e4e)';
+                } else if (clamped < 70) {
+                    fill.style.background = 'linear-gradient(90deg, #d04e4e, #8b0000)';
                 } else {
-                    t.textContent="完美行动";
-                    txt.textContent=`袁朗接过包，都不用打开，光凭手感就知道里面“干净”得很。他啧了一声，凑到你跟前，手指不老实地去勾你的衣角。\n\n“太狠心了吧？真的连个火星子都不给带？……行行行，烟我不带了，那打火机通融通融？那可是我在吴哲那儿顺来的战利品，我不带身上，万一给他偷回去怎么办？那是原则问题。”`;
+                    fill.style.background = 'linear-gradient(90deg, #4ecdc4, #44a08d)';
                 }
+            },
+            
+            showResult: (type) => {
+                const title = document.getElementById('result-title');
+                const text = document.getElementById('result-text');
+                
+                if (type === 'lose') {
+                    title.textContent = "挑战失败";
+                    text.textContent = `袁朗看着包里越来越多的硬中华和打火机，挑眉笑了笑，伸手捉住了你的手腕，力道不大，但让你动弹不得。\n\n“行了首长，差不多得了。您这是搞后勤呢，还是打算谋杀亲夫啊？再装下去，我就不是去出任务，是去开烟草博览会了。”`;
+                } else if (type === 'win_with_bad') {
+                    title.textContent = "圆满完成";
+                    text.textContent = `袁朗掂了掂包的分量，听到里面打火机碰撞的脆响，眼底闪过一丝得逞的笑意。他顺势将包甩到肩后，一把将你揽进怀里用力揉了揉。\n\n“这就对了，我就知道还是自家人心疼我。那些规矩是给南瓜们定的，咱不理那个……走了,等我回来。”`;
+                } else {
+                    title.textContent = "完美行动";
+                    text.textContent = `袁朗接过包，都不用打开，光凭手感就知道里面“干净”得很。他啧了一声，凑到你跟前，手指不老实地去勾你的衣角。\n\n“太狠心了吧？真的连个火星子都不给带？……行行行，烟我不带了，那打火机通融通融？那可是我在吴哲那儿顺来的战利品，我不带身上，万一给他偷回去怎么办？那是原则问题。”`;
+                }
+                
                 document.getElementById('overlay-result').classList.add('active');
             }
         };
 
+        // ==================== 游戏核心逻辑模块（性能优化版）====================
         const game = {
-            active: false, satisfaction: 30, caughtBad: false,
+            active: false,
+            satisfaction: 30,
+            caughtBad: false,
+            loopId: null,
+            intervalId: null,
+            playerX: 0,
+            playerY: 0,
+            targetX: 0,
+            targetY: 0,
+            items: [],  // 使用数组管理掉落物
+            lastSpawnTime: 0,
+
             setup: function() {
-                gameUI.hideIntro(); document.getElementById('mode-archive').classList.add('hidden');
+                gameUI.hideIntro();
+                document.getElementById('mode-archive').classList.add('hidden');
                 document.getElementById('mode-game').classList.add('active');
-                this.satisfaction=30; this.caughtBad=false;
-                this.px=this.tx=window.innerWidth/2; this.py=this.ty=window.innerHeight*0.8;
+                
+                this.satisfaction = 30;
+                this.caughtBad = false;
+                this.items = [];
+                this.lastSpawnTime = 0;
+                
+                this.playerX = this.targetX = window.innerWidth / 2;
+                this.playerY = this.targetY = window.innerHeight * 0.8;
+                
+                const bag = document.getElementById('player-bag');
+                bag.style.left = this.playerX + 'px';
+                bag.style.top = this.playerY + 'px';
+                
                 gameUI.updateBar(this.satisfaction);
-                document.getElementById('drop-zone').innerHTML='';
-                gameUI.startCountdown(()=>this.start());
+                document.getElementById('drop-zone').innerHTML = '';
+                
+                gameUI.startCountdown(() => this.start());
             },
+
             start: function() {
-                this.active=true;
-                this.mm=(e)=>{this.tx=e.clientX;this.ty=e.clientY;};
-                this.tm=(e)=>{e.preventDefault();this.tx=e.touches[0].clientX;this.ty=e.touches[0].clientY;};
-                window.addEventListener('mousemove',this.mm); window.addEventListener('touchmove',this.tm,{passive:false});
-                this.loop(); this.itv=setInterval(()=>this.spawn(),700);
+                this.active = true;
+                
+                const handleMouseMove = (e) => {
+                    this.targetX = e.clientX;
+                    this.targetY = e.clientY;
+                };
+                
+                const handleTouchMove = (e) => {
+                    e.preventDefault();
+                    if (e.touches.length > 0) {
+                        this.targetX = e.touches[0].clientX;
+                        this.targetY = e.touches[0].clientY;
+                    }
+                };
+                
+                this.handleMouseMove = handleMouseMove;
+                this.handleTouchMove = handleTouchMove;
+                
+                window.addEventListener('mousemove', handleMouseMove);
+                window.addEventListener('touchmove', handleTouchMove, { passive: false });
+                
+                this.gameLoop();
             },
-            spawn: function() {
-                if(!this.active) return;
-                const d=itemsData[Math.floor(Math.random()*itemsData.length)], el=document.createElement('img');
-                el.src=d.img; el.className='drop-item '+(d.type==='bad'?'danger':'good');
-                el.dataset.type=d.type; el.style.left=Math.random()*(window.innerWidth-60)+'px'; el.style.top='-60px';
-                el.speed=(Math.random()*2+2.5)*(1+this.satisfaction/200);
+
+            spawnItem: function() {
+                if (this.items.length >= CONFIG.MAX_DROP_ITEMS) return;
+                
+                const itemData = itemsData[Math.floor(Math.random() * itemsData.length)];
+                const el = document.createElement('img');
+                
+                el.src = itemData.img;
+                el.className = 'drop-item ' + (itemData.type === 'bad' ? 'danger' : 'good');
+                el.dataset.type = itemData.type;
+                el.alt = itemData.name;
+                
+                const startX = Math.random() * (window.innerWidth - 80);
+                
+                // 使用 transform 而非 top 来提升性能
+                el.style.left = startX + 'px';
+                el.style.transform = 'translateY(-80px)';
+                
+                const speed = (Math.random() * 2 + CONFIG.BASE_SPEED) * (1 + this.satisfaction / 200);
+                
+                this.items.push({
+                    element: el,
+                    y: -80,
+                    speed: speed,
+                    rotation: 0,
+                    rotationSpeed: Math.random() * 4 - 2
+                });
+                
                 document.getElementById('drop-zone').appendChild(el);
             },
-            loop: function() {
-                if(!this.active) return;
-                this.px+=(this.tx-this.px)*0.2; this.py+=(this.ty-this.py)*0.2;
-                const b=document.getElementById('player-bag'); b.style.left=this.px+'px'; b.style.top=this.py+'px';
-                const br=b.getBoundingClientRect(), dz=document.getElementById('drop-zone');
-                document.querySelectorAll('.drop-item').forEach(item=>{
-                    let top=parseFloat(item.style.top)+item.speed; item.style.top=top+'px';
-                    const ir=item.getBoundingClientRect();
-                    if(!(br.top+30>ir.bottom||br.bottom<ir.top||br.right-20<ir.left||br.left+20>ir.right)){
-                        if(item.dataset.type==='bad'){ this.satisfaction-=15; this.caughtBad=true; }
-                        else this.satisfaction+=5;
-                        this.satisfaction=Math.max(0,Math.min(100,this.satisfaction));
-                        gameUI.updateBar(this.satisfaction);
-                        item.remove();
-                        if(this.satisfaction<=0) this.over('lose');
-                        else if(this.satisfaction>=100) this.over(this.caughtBad?'win_with_bad':'win_perfect');
-                    } else if(top>window.innerHeight+60) item.remove();
-                });
-                requestAnimationFrame(()=>this.loop());
+
+            gameLoop: function() {
+                if (!this.active) return;
+                
+                // 平滑移动玩家
+                this.playerX += (this.targetX - this.playerX) * 0.2;
+                this.playerY += (this.targetY - this.playerY) * 0.2;
+                
+                const bag = document.getElementById('player-bag');
+                
+                // 修复：保留bag的CSS translate(-50%, -50%) 居中设定，并修复了模板字符串的语法错误
+                bag.style.transform = `translate(${this.playerX - window.innerWidth/2}px, ${this.playerY - window.innerHeight*0.8}px) translate(-50%, -50%)`;
+                
+                const bagRect = bag.getBoundingClientRect();
+                const now = Date.now();
+                
+                // 定时生成掉落物
+                if (now - this.lastSpawnTime > CONFIG.SPAWN_INTERVAL) {
+                    this.spawnItem();
+                    this.lastSpawnTime = now;
+                }
+                
+                // 更新所有掉落物
+                for (let i = this.items.length - 1; i >= 0; i--) {
+                    const item = this.items[i];
+                    item.y += item.speed;
+                    item.rotation += item.rotationSpeed;
+                    
+                    // 使用 transform 更新位置
+                    item.element.style.transform = `translateY(${item.y}px) rotate(${item.rotation}deg)`;
+                    
+                    const itemRect = item.element.getBoundingClientRect();
+                    
+                    // 碰撞检测
+                    if (this.checkCollision(bagRect, itemRect)) {
+                        this.processItem(item.element.dataset.type);
+                        item.element.remove();
+                        this.items.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // 移出屏幕
+                    if (item.y > window.innerHeight + 80) {
+                        item.element.remove();
+                        this.items.splice(i, 1);
+                    }
+                }
+                
+                this.loopId = requestAnimationFrame(() => this.gameLoop());
             },
-            over: function(t) { this.active=false; clearInterval(this.itv); gameUI.showResult(t); },
-            retry: function() { document.getElementById('overlay-result').classList.remove('active'); this.setup(); },
-            quit: function() { 
-                this.active=false; clearInterval(this.itv);
+
+            checkCollision: function(bag, item) {
+                const padding = 20;
+                return !(
+                    ((bag.top + 30) > item.bottom) ||
+                    (bag.bottom < item.top) ||
+                    (bag.right - padding < item.left) ||
+                    (bag.left + padding > item.right)
+                );
+            },
+
+            processItem: function(type) {
+                if (type === 'bad') {
+                    this.satisfaction -= CONFIG.BAD_PENALTY;
+                    this.caughtBad = true;
+                } else {
+                    this.satisfaction += CONFIG.GOOD_SCORE;
+                }
+                
+                this.satisfaction = Math.max(0, Math.min(CONFIG.WIN_THRESHOLD, this.satisfaction));
+                gameUI.updateBar(this.satisfaction);
+                
+                if (this.satisfaction <= 0) {
+                    this.gameOver('lose');
+                } else if (this.satisfaction >= CONFIG.WIN_THRESHOLD) {
+                    this.gameOver(this.caughtBad ? 'win_with_bad' : 'win_perfect');
+                }
+            },
+
+            gameOver: function(type) {
+                this.stop();
+                setTimeout(() => {
+                    gameUI.showResult(type);
+                }, 500);
+            },
+
+            stop: function() {
+                this.active = false;
+                if (this.loopId) cancelAnimationFrame(this.loopId);
+                
+                if (this.handleMouseMove) {
+                    window.removeEventListener('mousemove', this.handleMouseMove);
+                }
+                if (this.handleTouchMove) {
+                    window.removeEventListener('touchmove', this.handleTouchMove);
+                }
+                
+                // 清理掉落物
+                this.items.forEach(item => item.element.remove());
+                this.items = [];
+            },
+
+            retry: function() {
+                document.getElementById('overlay-result').classList.remove('active');
+                this.setup();
+            },
+
+            quit: function() {
+                this.stop();
                 document.getElementById('overlay-result').classList.remove('active');
                 document.getElementById('mode-game').classList.remove('active');
                 document.getElementById('mode-archive').classList.remove('hidden');
+                document.getElementById('drop-zone').innerHTML = '';
             }
         };
 
-        window.onload = () => {
-            let count=0; const urls=Object.values(assets);
-            urls.forEach(url=>{
-                const img=new Image(); 
-                img.onload=img.onerror=()=>{
-                    count++; document.getElementById('progress-bar').style.width=(count/urls.length*100)+'%';
-                    if(count===urls.length){
-                        setTimeout(()=>{
-                            document.getElementById('loading-screen').style.opacity='0';
-                            setTimeout(()=>{document.getElementById('loading-screen').style.display='none'; archive.init();},500);
-                        },300);
-                    }
+        // ==================== 初始化加载 ====================
+        window.addEventListener('DOMContentLoaded', () => {
+            let loadedCount = 0;
+            const urls = Object.values(assets);
+            const progressBar = document.getElementById('progress-bar');
+            const loadingScreen = document.getElementById('loading-screen');
+            
+            const updateProgress = () => {
+                loadedCount++;
+                const percent = (loadedCount / urls.length) * 100;
+                progressBar.style.width = percent + '%';
+                
+                if (loadedCount === urls.length) {
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                            archive.init();
+                        }, 500);
+                    }, 300);
+                }
+            };
+            
+            urls.forEach(url => {
+                const img = new Image();
+                img.onload = updateProgress;
+                img.onerror = () => {
+                    console.warn(`图片加载失败: ${url}`);
+                    updateProgress();
                 };
-                img.src=url;
+                img.src = url;
             });
-        };
+            
+            // 超时保护
+            setTimeout(() => {
+                if (loadedCount < urls.length) {
+                    console.warn('图片加载超时');
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        archive.init();
+                    }, 500);
+                }
+            }, 10000);
+        });
     </script>
     <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
     <script>LA.init({id:"3ON5xteoWdN65nBv",ck:"3ON5xteoWdN65nBv"})</script>
