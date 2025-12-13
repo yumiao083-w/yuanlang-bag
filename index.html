@@ -21,6 +21,10 @@
             --highlight: #8b0000;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -31,6 +35,7 @@
             height: 100vh;
             color: var(--text-main);
             user-select: none;
+            -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -41,18 +46,67 @@
             border-radius: 50%;
             pointer-events: none;
             animation: float linear infinite;
+            will-change: transform, opacity;
         }
+        
         @keyframes float {
             0% { transform: translateY(0) translateX(0); opacity: 0; }
             50% { opacity: 0.6; }
             100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
         }
 
-        /* --- 2. 开场画面 --- */
+        /* --- 2. 加载屏幕 (新增优化) --- */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 1rem;
+            color: var(--text-sub);
+            letter-spacing: 2px;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: var(--highlight);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* --- 3. 开场画面 --- */
         #intro-screen {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* JS控制显示 */
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -62,10 +116,15 @@
             cursor: pointer;
         }
 
+        #intro-screen.active {
+            display: flex;
+        }
+
         #bag-img {
             max-width: 280px;
             filter: drop-shadow(0 15px 25px rgba(0,0,0,0.1));
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            will-change: transform;
         }
         
         #intro-screen:hover #bag-img {
@@ -82,7 +141,7 @@
             padding-bottom: 5px;
         }
 
-        /* --- 3. 桌面区域 --- */
+        /* --- 4. 桌面区域 --- */
         #desktop {
             position: relative;
             width: 100%;
@@ -93,17 +152,25 @@
             z-index: 10;
         }
 
+        #desktop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .item {
             position: absolute;
             cursor: pointer;
-            transition: transform 0.3s ease, filter 0.3s;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                        filter 0.3s ease;
             filter: drop-shadow(4px 8px 8px rgba(0,0,0,0.15));
             width: 90px; 
             height: auto;
             max-height: 90px;
             object-fit: contain;
             transform-origin: center center;
-            transform: translate(-50%, -50%); 
+            will-change: transform, filter;
+            /* 手机适配核心：居中定位 */
+            transform: translate(-50%, -50%);
         }
 
         .item:hover {
@@ -112,12 +179,16 @@
             transform: translate(-50%, -50%) scale(1.2) !important;
         }
 
-        /* --- 4. 详情层 (Overlay) --- */
+        /* --- 5. 详情层 (Overlay) --- */
         #overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(247, 245, 240, 0.95); /* 加深一点不透明度，防止文字混淆 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(247, 245, 240, 0.95);
             backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             z-index: 200;
             display: flex;
             justify-content: center;
@@ -138,18 +209,20 @@
             align-items: center;
             width: 90%;
             max-width: 500px;
-            height: 90vh; /* 限制总高度，防止溢出 */
+            height: 90vh; 
             justify-content: center;
         }
 
         /* 3D 翻转区域 */
         .flip-scene {
             width: 300px;
-            height: 420px; /* 稍微加高，适应长文本 */
+            height: 420px;
             perspective: 1200px;
             margin-bottom: 15px;
             cursor: pointer;
-            flex-shrink: 0; /* 防止被压缩 */
+            flex-shrink: 0;
+            /* 手机防误触 */
+            -webkit-tap-highlight-color: transparent;
         }
 
         .flip-card {
@@ -157,7 +230,9 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
             transition: transform 0.8s cubic-bezier(0.4, 0.2, 0.2, 1);
+            will-change: transform;
         }
 
         .flip-card.flipped {
@@ -169,6 +244,7 @@
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -184,13 +260,16 @@
         .click-hint {
             position: absolute;
             bottom: 10px;
-            font-size: 14px;
+            font-size: 15px;
             color: #666;
-            background: rgba(255,255,255,0.8);
-            padding: 4px 12px;
+            background: rgba(255,255,255,0.9);
+            padding: 6px 16px;
             border-radius: 20px;
             pointer-events: none;
-            border: 1px solid #ddd;
+            border: 1px solid #d4d4d4;
+            font-family: 'MainType', serif;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         /* --- 背面信纸样式 --- */
@@ -217,35 +296,17 @@
         }
 
         .secret-content {
-            font-family: "Songti SC", "SimSun", "STSong", "serif"; /* 宋体 */
+            font-family: "Songti SC", "SimSun", "STSong", "serif";
             font-size: 1.05rem;
             line-height: 30px; 
             color: #222;
-            text-align: justify; /* 两端对齐更像文章 */
+            text-align: justify; 
             width: 100%;
             height: 100%;
-            overflow-y: auto; /* 允许内部滚动 */
+            overflow-y: auto; 
             margin-top: 15px;
             padding-bottom: 20px;
-            /* 隐藏滚动条但保留功能 */
             scrollbar-width: thin;
-        }
-
-        .stamp {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            border: 2px solid #c00;
-            color: #c00;
-            font-weight: bold;
-            padding: 2px 8px;
-            transform: rotate(-10deg);
-            font-family: 'MainType', serif;
-            opacity: 0.7;
-            font-size: 0.8rem;
-            background: rgba(255, 250, 240, 0.9);
-            z-index: 5;
-            pointer-events: none;
         }
 
         /* 下方介绍面板 */
@@ -255,10 +316,11 @@
             transform: translateY(20px);
             transition: all 0.5s ease 0.2s;
             width: 100%;
-            max-height: 30vh; /* 限制高度 */
+            max-height: 30vh; 
             display: flex;
             flex-direction: column;
         }
+
         #overlay.active .info-panel {
             opacity: 1;
             transform: translateY(0);
@@ -277,8 +339,8 @@
             line-height: 1.6;
             color: var(--text-sub);
             padding: 0 20px;
-            overflow-y: auto; /* 允许介绍文本滚动 */
-            text-align: left; /* 长文本左对齐阅读更舒服 */
+            overflow-y: auto; 
+            text-align: left;
         }
 
         .close-btn {
@@ -292,6 +354,32 @@
             border-radius: 4px;
             align-self: center;
             flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--highlight);
+            color: white;
+            border-color: var(--highlight);
+        }
+
+        /* 错误提示 */
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            z-index: 400;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.show {
+            display: block;
         }
 
         @keyframes pulse {
@@ -301,40 +389,75 @@
 
         /* --- 移动端适配 --- */
         @media (max-width: 600px) {
-            .item { width: 60px; max-height: 60px; }
-            .flip-scene { width: 85%; height: 55%; } /* 动态高度 */
-            .showcase-container { height: 95vh; }
-            .info-desc { font-size: 0.95rem; max-height: 25vh; }
-            .secret-content { font-size: 1rem; }
+            .item { 
+                width: 60px; 
+                max-height: 60px; 
+            }
+            .flip-scene { 
+                width: 85%; 
+                height: 55%; 
+            }
+            .showcase-container { 
+                height: 95vh; 
+            }
+            .info-desc { 
+                font-size: 0.95rem; 
+                max-height: 25vh; 
+            }
+            .secret-content { 
+                font-size: 1rem; 
+            }
+            .info-title {
+                font-size: 1.2rem;
+            }
+            #bag-img {
+                max-width: 220px;
+            }
         }
     </style>
 </head>
 <body>
 
+    <!-- 加载屏幕 -->
+    <div id="loading-screen">
+        <div class="loading-text">正在准备档案...</div>
+        <div class="loading-bar">
+            <div class="loading-progress" id="loading-progress"></div>
+        </div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div id="error-message" class="error-message">
+        <p>资源加载失败，请刷新页面重试</p>
+    </div>
+
+    <!-- 浮尘容器 -->
     <div id="dust-container"></div>
 
-    <div id="intro-screen" onclick="openBag()">
+    <!-- 开场画面 -->
+    <div id="intro-screen">
         <img src="https://youke2.picui.cn/s1/2025/12/14/693da2dcac144.png" id="bag-img" alt="公文包">
         <div class="hint-text">点击查收 · 袁朗的背包</div>
     </div>
 
+    <!-- 桌面区域 -->
     <div id="desktop"></div>
 
-    <div id="overlay" onclick="handleOverlayClick(event)">
+    <!-- 详情层 -->
+    <div id="overlay">
         <div class="showcase-container">
             
-            <div class="flip-scene" onclick="flipCard()">
+            <div class="flip-scene">
                 <div class="flip-card" id="flip-card">
                     <!-- 正面 -->
                     <div class="card-face card-front">
                         <img src="" id="showcase-img" alt="物品">
-                        <div class="click-hint">▲ 点击查看绝密档案</div>
+                        <div class="click-hint">仅供家属查阅</div>
                     </div>
 
                     <!-- 背面：信纸样式 -->
                     <div class="card-face card-back">
                         <div class="secret-content" id="showcase-secret"></div>
-                        <div class="stamp">TOP SECRET</div>
                     </div>
                 </div>
             </div>
@@ -342,13 +465,27 @@
             <div class="info-panel">
                 <div class="info-title" id="showcase-title"></div>
                 <div class="info-desc" id="showcase-desc"></div>
-                <button class="close-btn" onclick="closeOverlay()">收起</button>
+                <button class="close-btn" id="close-btn">收起</button>
             </div>
 
         </div>
     </div>
 
     <script>
+        // ==================== 配置对象 ====================
+        const CONFIG = {
+            SCATTER_DELAY: 80,
+            INTRO_TRANSITION: 800,
+            DUST_COUNT: 20,
+            // 物品分布范围（百分比）
+            ITEM_BOUNDS: { minLeft: 5, maxLeft: 85, minTop: 5, maxTop: 80 },
+            ROTATION_RANGE: 60,
+            DUST_SIZE: { min: 2, max: 6 },
+            DUST_DURATION: { min: 15, max: 30 },
+            DUST_DELAY: { min: 0, max: 5 }
+        };
+
+        // ==================== 资源配置 ====================
         const assets = {
             bag: "https://youke2.picui.cn/s1/2025/12/14/693da2dcac144.png",
             notebook: "https://test.fukit.cn/autoupload/fr/9SEWKrOTdntRiiM4UW9QWQmyCMsZ8JpZTUO5jDu8zLuyl5f0KlZfm6UsKj-HyTuv/20251214/q5zW/658X926/mmexport1765580286899.webp/webp",
@@ -370,186 +507,381 @@
             medical: "https://youke2.picui.cn/s1/2025/12/14/693d9e4fe3c88.jpg"
         };
 
-        // 共享文案定义
-        const sharedSecretSmoke = `正大光明的抽烟时间通常仅限于在基地。一到休假，袁朗离开的最后一件事，便是把脏物藏匿或者销毁。<br><br>不仅是因为你的约束，他也不希望你闻到任何硝烟，血腥，或是烟草气息。<br><br>比起尼古丁带来的片刻欢愉，他更贪恋把你拥进怀里，你不会皱眉推开他的那一刻。`;
-        const sharedSecretPhone = `有拔就有插，在周末允许通信的时候，袁朗会插上电话卡，拨通你的电话。<br><br>当然，通话是奢望，不要指望山里的信号有多好，电音是你们互诉衷肠的配乐。<br><br>“喂？能听到我说话吗？”<br>“嗯，现在听清了。听见了，我也想你。”`;
+        // ==================== 共享文案 (使用反引号避免符号冲突) ====================
+        const sharedSecrets = {
+            notebook: `有时忙着竞选演习，休假时，这本笔记本也会被随身带回家。<br>内容虽然重要，但不涉密，他默许你的翻阅,甚至会在某个角落留给你一个彩蛋。<br><br>也许是为唯一读者写下的便签，一篇充满心事的随笔，或是一句简单的念着你名字的“想你了”。<br>这是整本笔记里，唯一不含算计和阴谋的真心话。`,
+            
+            smoke: `正大光明的抽烟时间通常仅限于在基地。一到休假，袁朗离开的最后一件事，便是把脏物藏匿或者销毁。<br><br>不仅是因为你的约束，他也不希望你闻到任何硝烟，血腥，或是烟草气息。<br><br>比起尼古丁带来的片刻欢愉，他更贪恋把你拥进怀里，你不会皱眉推开他的那一刻。`,
+            
+            phone: `有拔就有插，在周末允许通信的时候，袁朗会插上电话卡，拨通你的电话。<br><br>当然，通话是奢望，不要指望山里的信号有多好，电音是你们互诉衷肠的配乐。<br><br>“喂？能听到我说话吗？”<br>“嗯，现在听清了。听见了，我也想你。”`
+        };
 
+        // ==================== 数据配置 (文本已修复引号问题) ====================
         const itemsData = [
             { 
-                id: "notebook", img: assets.notebook, name: "英雄牌钢笔 & 皮革笔记本", 
-                desc: "• 经典英雄牌钢笔，能写就行。在大家换上签字笔的年代，袁朗还是习惯用钢笔，理由是钢笔有笔锋，能突出他的一手好字。<br><br>• 笔记本是去东部战区参加某个研讨会议发的纪念品。袁朗私下里专门研究过，是真皮。不得不说，那边军费确实宽裕。<br>里面记录了这位年轻中校对现代战场的各种推演与野心，纷乱的训练计划旁边，夹杂了几行潦草的日程备忘，或是针对某场演习的简单构想。<br>但内容并不总是那么严肃，特殊情况下，某页空白的纸会被撕下来，写上一串联系方式，给他看中的人。", 
-                secret: "有时忙着竞选演习，休假时，这本笔记本也会被随身带回家。<br>内容虽然重要，但不涉密，他默许你的翻阅，甚至会在某个角落留给你一个彩蛋。<br><br>也许是为唯一读者写下的便签，一篇充满心事的随笔，或是一句简单的念着你名字的“想你了”。<br>这是整本笔记里，唯一不含算计和阴谋的真心话。" 
+                id: "pen", 
+                img: assets.pen, 
+                name: "英雄牌钢笔", 
+                desc: `• 经典英雄牌钢笔，能写就行。在大家换上签字笔的年代，袁朗还是习惯用钢笔，理由是钢笔有笔锋，能突出他的一手好字。`,
+                secret: sharedSecrets.notebook
             },
             { 
-                id: "smoke", img: assets.smoke, name: "硬中华", 
-                desc: "世纪初的中华，是身份和待遇的象征。碰上袁朗这个老烟枪，超市估计要给他单独开条进货渠道。<br><br>袁朗选择硬中华的理由很现实：外壳够硬，不至于让他在整日奔袭后想抽根烟解乏，却掏出一把被压扁的碎烟丝。", 
-                secret: sharedSecretSmoke 
+                id: "notebook", 
+                img: assets.notebook, 
+                name: "皮革笔记本", 
+                desc: `• 笔记本是去东部战区参加某个研讨会议发的纪念品。袁朗私下里专门研究过，是真皮。不得不说，那边军费确实宽裕。<br>里面记录了这位年轻中校对现代战场的各种推演与野心，纷乱的训练计划旁边，夹杂了几行潦草的日程备忘，或是针对某场演习的简单构想。<br>但内容并不总是那么严肃，特殊情况下，某页空白的纸会被撕下来，写上一串联系方式，给他看中的人。`, 
+                secret: sharedSecrets.notebook
             },
             { 
-                id: "lighter", img: assets.lighter, name: "一次性打火机", 
-                desc: "街边小卖部最常见的款式。<br>大概率不是袁朗本人的，应该是从某个战友或者领导的那里顺的。<br>幸运的是，袁朗还没有遇到和他计较一个打火机的战友。", 
-                secret: sharedSecretSmoke 
+                id: "smoke", 
+                img: assets.smoke, 
+                name: "硬中华", 
+                desc: `世纪初的中华，是身份和待遇的象征。碰上袁朗这个老烟枪，超市估计要给他单独开条进货渠道。<br><br>袁朗选择硬中华的理由很现实：外壳够硬，不至于让他在整日奔袭后想抽根烟解乏，却掏出一把被压扁的碎烟丝。`, 
+                secret: sharedSecrets.smoke 
             },
             { 
-                id: "keyCar", img: assets.keyCar, name: "车钥匙", 
-                desc: "一把车钥匙。<br>大概率是部队里的那辆指挥通勤车的。", 
-                secret: "袁朗有私家车，但平时没空开。于是钥匙便落到你手中，他的理由给得冠冕堂皇：“车这东西，放着不开会坏。你帮我溜溜，油费我报销。”顺带塞给你的还有一张顶额油卡。<br><br>当然，如果你不会开，说不准袁朗会把车开到空地，手把手教你。" 
+                id: "lighter", 
+                img: assets.lighter, 
+                name: "一次性打火机", 
+                desc: `街边小卖部最常见的款式。<br>大概率不是袁朗本人的，应该是从某个战友或者领导的那里顺的。<br>幸运的是，袁朗还没有遇到和他计较一个打火机的战友。`, 
+                secret: sharedSecrets.smoke 
             },
             { 
-                id: "keyHome", img: assets.keyHome, name: "一串钥匙", 
-                desc: "几把平平无奇的钥匙。<br>像柜门或是房门的。可能是他抛给吴哲的那一串，也可能是他家的。总之不大可能是袁队长秘密基地的钥匙。", 
-                secret: "袁朗一般不带家钥匙走，所以回来总是要你开门。他说难得回来一趟，要先敲门，等你开，才更有回家的仪式感。<br><br>不过，也有你不在家的时刻，这种时候一般有两种可能：一，尝试翻进家，把一无所知的你吓一跳；二，在门口猫着等，等你来了，就有绝佳理由向你讨个弥补的吻。" 
+                id: "keyCar", 
+                img: assets.keyCar, 
+                name: "车钥匙", 
+                desc: `一把车钥匙。<br>大概率是部队里的那辆指挥通勤车的。`, 
+                secret: `袁朗有私家车，但平时没空开。于是钥匙便落到你手中，他的理由给得冠冕堂皇：“车这东西，放着不开会坏。你帮我溜溜，油费我报销。”顺带塞给你的还有一张顶额油卡。<br><br>当然，如果你不会开，说不准袁朗会把车开到空地，手把手教你。` 
             },
             { 
-                id: "sunglasses", img: assets.sunglasses, name: "墨镜", 
-                desc: "伪装道具一<br>除了遮阳，墨镜更大的作用是隐藏情绪。镜片底下的眼睛或许曾经动容过，但无人知晓。", 
-                secret: "其实有人知晓。<br>他身边的战友，以及最亲密的人。<br>总有人会看见他伪装之下的底色，也有人能荣幸听见他亲口剖白自己的真心。" 
+                id: "keyHome", 
+                img: assets.keyHome, 
+                name: "一串钥匙", 
+                desc: `几把平平无奇的钥匙。<br>像柜门或是房门的。可能是他抛给吴哲的那一串，也可能是他家的。总之不大可能是袁队长秘密基地的钥匙。`, 
+                secret: `袁朗一般不带家钥匙走，所以回来总是要你开门。他说难得回来一趟，要先敲门，等你开，才更有回家的仪式感。<br><br>不过，也有你不在家的时刻，这种时候一般有两种可能：一，尝试翻进家，把一无所知的你吓一跳；二，在门口猫着等，等你来了，就有绝佳理由向你讨个弥补的吻。` 
             },
             { 
-                id: "phone", img: assets.phone, name: "诺基亚 1110", 
-                desc: "伪装道具二<br>那部在训练场当道具的手机。<br>不是模型，是那几年流行的诺基亚1110。电话卡一拔，就成了袁队长用来演戏的道具。", 
-                secret: sharedSecretPhone 
+                id: "sunglasses", 
+                img: assets.sunglasses, 
+                name: "墨镜", 
+                desc: `伪装道具一<br>除了遮阳，墨镜更大的作用是隐藏情绪。镜片底下的眼睛或许曾经动容过，但无人知晓。`, 
+                secret: `其实有人知晓。<br>他身边的战友，以及最亲密的人。<br>总有人会看见他伪装之下的底色，也有人能荣幸听见他亲口剖白自己的真心。` 
             },
             { 
-                id: "sim", img: assets.sim, name: "磨损的电话卡", 
-                desc: "被拔掉的电话卡<br>由于主人反复插拔似乎有些磨损。", 
-                secret: sharedSecretPhone 
+                id: "phone", 
+                img: assets.phone, 
+                name: "诺基亚 1110", 
+                desc: `伪装道具二<br>那部在训练场当道具的手机。<br>不是模型，是那几年流行的诺基亚1110。电话卡一拔，就成了袁队长用来演戏的道具。`, 
+                secret: sharedSecrets.phone 
             },
             { 
-                id: "drops", img: assets.drops, name: "眼药水", 
-                desc: "有人由于长期盯着电子屏幕，尤其是黑灯瞎火的时候看，导致眼部干涩疲劳，不得不随身带瓶眼药水。<br>恐成被电子产品“毒害”的第一代。", 
-                secret: "给袁朗滴眼药水是个体力活。<br>那双平日里目光如炬，能看透一切的眼睛，在那刻褪去了狡猾的神色，只剩下眼底的清明，甚至有一点呆萌。<br><br>你却总是忍不住笑，换来的是他无奈的埋怨：“你到底行不行？再笑我就自己来了。”<br>明明最开始是他要求你帮助他的。" 
+                id: "sim", 
+                img: assets.sim, 
+                name: "磨损的电话卡", 
+                desc: `被拔掉的电话卡<br>由于主人反复插拔似乎有些磨损。`, 
+                secret: sharedSecrets.phone 
             },
             { 
-                id: "oil", img: assets.oil, name: "风油精", 
-                desc: "基地靠山，蚊虫多，风油精是必带。<br>在没有咖啡、香烟、茶叶的时刻，袁朗也会用风油精来提神。<br>至于是滴到太阳穴还是人中，不要问。<br><br>千万不要在用手抹了风油精之后上厕所，这是你给袁朗的忠告。<br>没想到他用一种“用你说？”表情看着你。<br>“袁朗，你是不是已经遭遇过一次了？”", 
-                secret: "千万不要在用手抹了风油精之后上厕所，这是你给袁朗的忠告。没想到他用一种“用你说？”的表情看着你。“袁朗，你是不是已经遭遇过一次了？”" 
+                id: "drops", 
+                img: assets.drops, 
+                name: "眼药水", 
+                desc: `有人由于长期盯着电子屏幕，尤其是黑灯瞎火的时候看，导致眼部干涩疲劳，不得不随身带瓶眼药水。<br>恐成被电子产品“毒害”的第一代。`, 
+                secret: `给袁朗滴眼药水是个体力活。<br>那双平日里目光如炬，能看透一切的眼睛，在那刻褪去了狡猾的神色，只剩下眼底的清明，甚至有一点呆萌。<br><br>你却总是忍不住笑，换来的是他无奈的埋怨：“你到底行不行？再笑我就自己来了。”<br>明明最开始是他要求你帮助他的。` 
             },
             { 
-                id: "pills", img: assets.pills, name: "神秘药片", 
-                desc: "没有外包装的药片，分不清是什么药。<br>可能是安眠药，可能是护肝片，毕竟此人经常通宵达旦搞工作，神经和肝脾受损再正常不过。也可能只是个包装独特的薄荷糖，伪装道具之三，用来有一天讲故事，或者忽悠某个单纯的南瓜。", 
-                secret: "袁朗嘴里没个准话，你直接问他是不是壮阳药所以不好意思说，他只愣了一秒，便哈哈大笑，乐不可支地搂住你，邀请你晚上检查他到底吃药没有。" 
+                id: "oil", 
+                img: assets.oil, 
+                name: "风油精", 
+                desc: `基地靠山，蚊虫多，风油精是必带。<br>在没有咖啡、香烟、茶叶的时刻，袁朗也会用风油精来提神。<br>至于是滴到太阳穴还是人中，不要问。<br><br>千万不要在用手抹了风油精之后上厕所，这是你给袁朗的忠告。<br>没想到他用一种“用你说？”表情看着你。<br>“袁朗，你是不是已经遭遇过一次了？”`, 
+                secret: `千万不要在用手抹了风油精之后上厕所，这是你给袁朗的忠告。没想到他用一种“用你说？”的表情看着你。“袁朗，你是不是已经遭遇过一次了？”` 
             },
             { 
-                id: "knife", img: assets.knife, name: "多功能折叠刀", 
-                desc: "多功能折叠刀，是一些人孩童到中年都向往的“玩具”。但对于大多人来说，很少有能够把全部工具都派上用场的时候。<br>对于一名特种兵而言，利用它的场景大大增加。", 
-                secret: "袁朗像是会在外面会捡树枝的人。遇到野生木材，随身掏出那把折叠刀修剪打磨，做个挂件，雕个小像，或者当个勺柄，也许还会做个弹弓打树上的果子。<br><br>反正最后都会变成送给你的礼物。" 
+                id: "pills", 
+                img: assets.pills, 
+                name: "神秘药片", 
+                desc: `没有外包装的药片，分不清是什么药。<br>可能是安眠药，可能是护肝片，毕竟此人经常通宵达旦搞工作，神经和肝脾受损再正常不过。也可能只是个包装独特的薄荷糖，伪装道具之三，用来有一天讲故事，或者忽悠某个单纯的南瓜。`, 
+                secret: `袁朗嘴里没个准话，你直接问他是不是壮阳药所以不好意思说，他只愣了一秒，便哈哈大笑，乐不可支地搂住你，邀请你晚上检查他到底吃药没有。` 
             },
             { 
-                id: "wallet", img: assets.wallet, name: "真皮钱包", 
-                desc: "钱包也是真皮的。倒不是某个会议送的，也不是顺别人的，是袁朗实打实用自己的钱买的。<br>应该是刚提干那年，为了庆祝拿到驾照和第一个月军官工资，特意去商场挑的。<br>他对生活用品没有追求，但那次挑了个好货，材质好，质量也好，一用就是好几年。<br>里面不外乎是几张百元大钞、一叠零钱、几张磨花的银行卡。", 
-                secret: "最前面的透明卡槽过去放的是最常用的卡，但现在换成了你的照片。<br>每次买单打开钱包，都会扫过你的相片，偶尔被战友瞥见，起哄要看，他就会立马合上。" 
+                id: "knife", 
+                img: assets.knife, 
+                name: "多功能折叠刀", 
+                desc: `多功能折叠刀，是一些人孩童到中年都向往的“玩具”。但对于大多人来说，很少有能够把全部工具都派上用场的时候。<br>对于一名特种兵而言，利用它的场景大大增加。`, 
+                secret: `袁朗像是会在外面会捡树枝的人。遇到野生木材，随身掏出那把折叠刀修剪打磨，做个挂件，雕个小像，或者当个勺柄，也许还会做个弹弓打树上的果子。<br><br>反正最后都会变成送给你的礼物。` 
             },
             { 
-                id: "license", img: assets.license, name: "驾驶证", 
-                desc: "驾龄很长，准驾车型那一栏写了好几种。<br>证件照上的袁朗比现在青涩得多，留着寸头，眼神还没现在这么深不可测，有股年轻气盛的狂傲。<br>他自诩当年考驾照是一把过，不知是真是假。", 
-                secret: "“你知道代号Z是什么车型吗？”袁朗一开口，你就知道他又开始装神秘。<br>你顺着他的话问，得到“是坦克”的答案，然后是这个男人表示你老公什么会开的显摆。<br><br>秉持着科学态度上网求証，意外发现了其他车型。<br>“你什么都会，开个挖机呗。以后退了开一家老兵挖掘机。”" 
+                id: "wallet", 
+                img: assets.wallet, 
+                name: "真皮钱包", 
+                desc: `钱包也是真皮的。倒不是某个会议送的，也不是顺别人的，是袁朗实打实用自己的钱买的。<br>应该是刚提干那年，为了庆祝拿到驾照和第一个月军官工资，特意去商场挑的。<br>他对生活用品没有追求，但那次挑了个好货，材质好，质量也好，一用就是好几年。<br>里面不外乎是几张百元大钞、一叠零钱、几张磨花的银行卡。`, 
+                secret: `最前面的透明卡槽过去放的是最常用的卡，但现在换成了你的照片。<br>每次买单打开钱包，都会扫过你的相片，偶尔被战友瞥见，起哄要看，他就会立马合上。` 
             },
             { 
-                id: "officer", img: assets.officer, name: "军官证", 
-                desc: "入伍后，户口会被注销，身份证也需要上交保管，军官证便是在社会上证明身份的唯一有效证件。<br>买车票，开户汇款，办电话卡，住宾馆登记，都要用这个本子。<br>不仅是一种荣誉，也是离开营区后生活的必需品。<br>对袁朗来说，比起享受“军人优先”的权利，他更多是承担军人的责任。在路上遇到碰到寻衅滋事，他见义勇为，会出示军官证起到震慑效果；战友手术押金不够，这个证件就是担保和抵押。", 
-                secret: "军人结婚也不需要户口本和身份証，只需要这本军官証和结婚証明。" 
+                id: "license", 
+                img: assets.license, 
+                name: "驾驶证", 
+                desc: `驾龄很长，准驾车型那一栏写了好几种。<br>证件照上的袁朗比现在青涩得多，留着寸头，眼神还没现在这么深不可测，有股年轻气盛的狂傲。<br>他自诩当年考驾照是一把过，不知是真是假。`, 
+                secret: `“你知道代号Z是什么车型吗？”袁朗一开口，你就知道他又开始装神秘。<br>你顺着他的话问，得到“是坦克”的答案，然后是这个男人表示你老公什么会开的显摆。<br><br>秉持着科学态度上网求证，意外发现了其他车型。<br>“你什么都会，开个挖机呗。以后退了开一家老兵挖掘机。”` 
             },
             { 
-                id: "medical", img: assets.medical, name: "挂号单", 
-                desc: "复查左臂旧伤的挂号单。<br>可能是那次检查后顺手揣进兜里，忘了拿出来。", 
-                secret: "军属也有享有免费医疗的资格，当然仅限于配偶和子女。<br>袁朗不会把这项优待当作和他结婚的好处之一，也不想让它成为你衡量的条件。<br><br>但生活不光是理想主义中纯粹的爱情，必要时刻，他也希望这个身份给你一些帮助和便利。" 
+                id: "officer", 
+                img: assets.officer, 
+                name: "军官证", 
+                desc: `入伍后，户口会被注销，身份证也需要上交保管，军官证便是在社会上证明身份的唯一有效证件。<br>买车票，开户汇款，办电话卡，住宾馆登记，都要用这个本子。<br>不仅是一种荣誉，也是离开营区后生活的必需品。<br>对袁朗来说，比起享受“军人优先”的权利，他更多是承担军人的责任。在路上遇到碰到寻衅滋事，他见义勇为，会出示军官证起到震慑效果；战友手术押金不够，这个证件就是担保和抵押。`, 
+                secret: `军人结婚也不需要户口本和身份证，只需要这本军官证和结婚证明。` 
+            },
+            { 
+                id: "medical", 
+                img: assets.medical, 
+                name: "挂号单", 
+                desc: `复查左臂旧伤的挂号单。<br>可能是那次检查后顺手揣进兜里，忘了拿出来。`, 
+                secret: `军属也有享有免费医疗的资格，当然仅限于配偶和子女。<br>袁朗不会把这项优待当作和他结婚的好处之一，也不想让它成为你衡量的条件。<br><br>但生活不光是理想主义中纯粹的爱情，必要时刻，他也希望这个身份给你一些帮助和便利。` 
             }
         ];
 
-        // --- 逻辑控制 ---
+        // ==================== 工具函数 ====================
+        const utils = {
+            random: (min, max) => Math.random() * (max - min) + min,
+            
+            // 预加载图片
+            preloadImages: (urls) => {
+                let loaded = 0;
+                const total = urls.length;
+                const progressBar = document.getElementById('loading-progress');
+                
+                return Promise.all(
+                    urls.map(url => new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            loaded++;
+                            if (progressBar) progressBar.style.width = `${(loaded / total) * 100}%`;
+                            resolve(url);
+                        };
+                        img.onerror = () => {
+                            console.warn(`图片加载失败: ${url}`);
+                            loaded++;
+                            if (progressBar) progressBar.style.width = `${(loaded / total) * 100}%`;
+                            resolve(url); // 失败也继续
+                        };
+                        img.src = url;
+                    }))
+                );
+            },
 
-        function createDust() {
-            const container = document.getElementById('dust-container');
-            for(let i=0; i<20; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'dust';
-                dot.style.width = Math.random() * 4 + 'px';
-                dot.style.height = dot.style.width;
-                dot.style.left = Math.random() * 100 + 'vw';
-                dot.style.top = Math.random() * 100 + 'vh';
-                dot.style.animationDuration = Math.random() * 15 + 15 + 's';
-                dot.style.animationDelay = Math.random() * 5 + 's';
-                container.appendChild(dot);
+            getElement: (id) => document.getElementById(id),
+
+            showError: (message) => {
+                const errorEl = utils.getElement('error-message');
+                if (errorEl) {
+                    errorEl.textContent = message;
+                    errorEl.classList.add('show');
+                    setTimeout(() => errorEl.classList.remove('show'), 3000);
+                }
             }
-        }
-        createDust();
+        };
 
-        function openBag() {
-            const intro = document.getElementById('intro-screen');
-            const desktop = document.getElementById('desktop');
-            const bagImg = document.getElementById('bag-img');
+        // ==================== 应用类 ====================
+        class App {
+            constructor() {
+                this.currentItem = null;
+                this.isFlipped = false;
+                this.init();
+            }
 
-            bagImg.style.transform = 'translateY(100px) scale(0.8)';
-            intro.style.opacity = '0';
-            
-            setTimeout(() => {
-                intro.style.display = 'none';
-                desktop.style.opacity = '1';
-                desktop.style.pointerEvents = 'auto';
-                scatterItems();
-            }, 800);
-        }
+            async init() {
+                try {
+                    this.createDust();
+                    
+                    const allImages = [assets.bag, ...itemsData.map(item => item.img)];
+                    await utils.preloadImages(allImages);
+                    
+                    this.showIntroScreen();
+                    this.bindEvents();
+                    
+                } catch (error) {
+                    console.error('初始化失败:', error);
+                    utils.showError('资源加载失败，请刷新页面重试');
+                }
+            }
 
-        function scatterItems() {
-            const desktop = document.getElementById('desktop');
-            
-            itemsData.forEach((item, index) => {
-                const img = document.createElement('img');
-                img.src = item.img;
-                img.className = 'item';
+            createDust() {
+                const container = utils.getElement('dust-container');
+                if (!container) return;
+
+                for (let i = 0; i < CONFIG.DUST_COUNT; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'dust';
+                    const size = utils.random(CONFIG.DUST_SIZE.min, CONFIG.DUST_SIZE.max);
+                    dot.style.width = `${size}px`;
+                    dot.style.height = `${size}px`;
+                    dot.style.left = `${utils.random(0, 100)}vw`;
+                    dot.style.top = `${utils.random(0, 100)}vh`;
+                    dot.style.animationDuration = `${utils.random(CONFIG.DUST_DURATION.min, CONFIG.DUST_DURATION.max)}s`;
+                    dot.style.animationDelay = `${utils.random(CONFIG.DUST_DELAY.min, CONFIG.DUST_DELAY.max)}s`;
+                    container.appendChild(dot);
+                }
+            }
+
+            showIntroScreen() {
+                const loadingScreen = utils.getElement('loading-screen');
+                const introScreen = utils.getElement('intro-screen');
                 
-                // 确保在屏幕中间区域分布，保留边缘
-                const left = 5 + Math.random() * 85; 
-                const top = 5 + Math.random() * 80; 
+                if (loadingScreen) {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => loadingScreen.style.display = 'none', 500);
+                }
                 
-                const rot = (Math.random() - 0.5) * 60; 
+                if (introScreen) {
+                    setTimeout(() => introScreen.classList.add('active'), 600);
+                }
+            }
 
-                img.style.left = `${left}%`;
-                img.style.top = `${top}%`;
+            bindEvents() {
+                const introScreen = utils.getElement('intro-screen');
+                if (introScreen) {
+                    introScreen.addEventListener('click', () => this.openBag());
+                }
+
+                const desktop = utils.getElement('desktop');
+                if (desktop) {
+                    desktop.addEventListener('click', (e) => {
+                        // 使用 closest 查找最近的 .item 元素，兼容点击图片内部
+                        const targetItem = e.target.closest('.item');
+                        if (targetItem) {
+                            const itemId = targetItem.dataset.itemId;
+                            const item = itemsData.find(i => i.id === itemId);
+                            if (item) this.openOverlay(item);
+                        }
+                    });
+                }
+
+                const flipScene = document.querySelector('.flip-scene');
+                if (flipScene) {
+                    flipScene.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.flipCard();
+                    });
+                }
+
+                const closeBtn = utils.getElement('close-btn');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.closeOverlay();
+                    });
+                }
+
+                const overlay = utils.getElement('overlay');
+                if (overlay) {
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target.id === 'overlay') this.closeOverlay();
+                    });
+                }
+            }
+
+            openBag() {
+                const intro = utils.getElement('intro-screen');
+                const desktop = utils.getElement('desktop');
+                const bagImg = utils.getElement('bag-img');
+
+                if (!intro || !desktop || !bagImg) return;
+
+                bagImg.style.transform = 'translateY(100px) scale(0.8)';
+                intro.style.opacity = '0';
                 
-                img.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(0)`;
-                
-                img.onclick = (e) => {
-                    e.stopPropagation(); 
-                    openOverlay(item);
-                };
-
-                desktop.appendChild(img);
-
                 setTimeout(() => {
-                    img.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(1)`;
-                }, index * 80);
-            });
-        }
-
-        function openOverlay(item) {
-            const overlay = document.getElementById('overlay');
-            const card = document.getElementById('flip-card');
-            
-            document.getElementById('showcase-img').src = item.img;
-            document.getElementById('showcase-title').innerText = item.name;
-            document.getElementById('showcase-desc').innerHTML = item.desc; // 使用 innerHTML 识别 <br>
-            document.getElementById('showcase-secret').innerHTML = item.secret; // 使用 innerHTML 识别 <br>
-
-            card.classList.remove('flipped');
-            overlay.classList.add('active');
-        }
-
-        function flipCard() {
-            const card = document.getElementById('flip-card');
-            card.classList.toggle('flipped');
-        }
-
-        function closeOverlay() {
-            const overlay = document.getElementById('overlay');
-            overlay.classList.remove('active');
-        }
-
-        function handleOverlayClick(e) {
-            if (e.target.id === 'overlay') {
-                closeOverlay();
+                    intro.style.display = 'none';
+                    desktop.classList.add('active');
+                    this.scatterItems();
+                }, CONFIG.INTRO_TRANSITION);
             }
+
+            scatterItems() {
+                const desktop = utils.getElement('desktop');
+                if (!desktop) return;
+
+                const fragment = document.createDocumentFragment();
+                const { minLeft, maxLeft, minTop, maxTop } = CONFIG.ITEM_BOUNDS;
+                
+                itemsData.forEach((item, index) => {
+                    const img = document.createElement('img');
+                    img.src = item.img;
+                    img.className = 'item';
+                    img.dataset.itemId = item.id;
+                    img.alt = item.name;
+                    
+                    const left = utils.random(minLeft, maxLeft);
+                    const top = utils.random(minTop, maxTop);
+                    const rot = (Math.random() - 0.5) * CONFIG.ROTATION_RANGE;
+
+                    // 使用 translate(-50%, -50%) 确保基于中心点定位，防止溢出屏幕
+                    img.style.cssText = `
+                        left: ${left}%;
+                        top: ${top}%;
+                        transform: translate(-50%, -50%) rotate(${rot}deg) scale(0);
+                        transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${index * CONFIG.SCATTER_DELAY}ms;
+                    `;
+                    
+                    fragment.appendChild(img);
+
+                    setTimeout(() => {
+                        img.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(1)`;
+                    }, 50);
+                });
+                
+                desktop.appendChild(fragment);
+            }
+
+            openOverlay(item) {
+                this.currentItem = item;
+                this.isFlipped = false;
+
+                const overlay = utils.getElement('overlay');
+                const card = utils.getElement('flip-card');
+                const showcaseImg = utils.getElement('showcase-img');
+                const showcaseTitle = utils.getElement('showcase-title');
+                const showcaseDesc = utils.getElement('showcase-desc');
+                const showcaseSecret = utils.getElement('showcase-secret');
+
+                if (!overlay || !card) return;
+
+                if (showcaseImg) showcaseImg.src = item.img;
+                if (showcaseTitle) showcaseTitle.textContent = item.name;
+                if (showcaseDesc) showcaseDesc.innerHTML = item.desc;
+                if (showcaseSecret) showcaseSecret.innerHTML = item.secret;
+
+                card.classList.remove('flipped');
+                overlay.classList.add('active');
+            }
+
+            flipCard() {
+                const card = utils.getElement('flip-card');
+                if (!card) return;
+
+                this.isFlipped = !this.isFlipped;
+                card.classList.toggle('flipped');
+            }
+
+            closeOverlay() {
+                const overlay = utils.getElement('overlay');
+                const card = utils.getElement('flip-card');
+                
+                if (!overlay) return;
+
+                overlay.classList.remove('active');
+                if (card) card.classList.remove('flipped');
+                
+                this.currentItem = null;
+                this.isFlipped = false;
+            }
+        }
+
+        // ==================== 应用启动 ====================
+        let app;
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => app = new App());
+        } else {
+            app = new App();
         }
     </script>
 </body>
