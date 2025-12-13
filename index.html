@@ -37,7 +37,7 @@
             height: 100vh;
             color: var(--text-main);
             -webkit-tap-highlight-color: transparent;
-            touch-action: none;
+            touch-action: none; /* 禁止全局默认触摸，为了拖拽 */
         }
 
         /* --- 2. 加载屏幕 --- */
@@ -202,11 +202,11 @@
         @keyframes slideUpFade {
             0% {
                 opacity: 0;
-                transform: translateY(25px); /* 从下方25px处开始 */
+                transform: translateY(25px); 
             }
             100% {
                 opacity: 1;
-                transform: translateY(0); /* 回到原位 */
+                transform: translateY(0); 
             }
         }
 
@@ -217,7 +217,7 @@
             text-align: center; 
         }
         
-        /* 1. 卡片先出 (0秒延迟) */
+        /* 1. 卡片先出 */
         #overlay-detail.active .flip-scene {
             animation: slideUpFade 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
             opacity: 0; 
@@ -405,10 +405,11 @@
             transition: transform 0.05s ease-out;
         }
 
+        /* --- 修改点：游戏掉落物尺寸放大 --- */
         .drop-item {
             position: absolute; 
-            width: 55px; 
-            height: 55px; 
+            width: 80px;  /* 从55改到80 */
+            height: 80px; 
             object-fit: contain; 
             z-index: 52;
             filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2)); 
@@ -532,6 +533,7 @@
             display: block;
         }
         
+        /* --- 修改点：恢复文本滑动 --- */
         .secret-content { 
             font-family: "Songti SC", "SimSun", serif; 
             font-size: 1.05rem;
@@ -543,6 +545,9 @@
             scrollbar-width: thin; 
             padding-top: 2px;
             margin-top: 30px;
+            /* 关键修改：允许触摸滚动，允许文本选择 */
+            touch-action: pan-y;
+            user-select: text;
         }
         
         .secret-content::-webkit-scrollbar {
@@ -567,6 +572,7 @@
             font-family: 'MainType'; 
         }
         
+        /* --- 修改点：恢复文本滑动 --- */
         .info-desc { 
             margin-top: 10px; 
             font-size: 0.95rem; 
@@ -575,6 +581,9 @@
             overflow-y: auto; 
             text-align: left; 
             scrollbar-width: thin;
+            /* 关键修改：允许触摸滚动，允许文本选择 */
+            touch-action: pan-y;
+            user-select: text;
         }
         
         .info-desc::-webkit-scrollbar {
@@ -589,7 +598,8 @@
         /* 移动端适配 */
         @media (max-width: 600px) {
             #player-bag { width: 110px; }
-            .drop-item { width: 45px; height: 45px; }
+            /* --- 修改点：移动端游戏掉落物也对应放大 --- */
+            .drop-item { width: 65px; height: 65px; } /* 从45改到65 */
             .modal-box { padding: 30px 20px; }
             .modal-title { font-size: 1.3rem; }
             .modal-desc { font-size: 1rem; }
@@ -622,6 +632,7 @@
         <!-- 物品详情弹窗 -->
         <div id="overlay-detail" class="overlay-mask" onclick="if(event.target.id==='overlay-detail') archive.closeOverlay()">
             <div class="showcase-container">
+                <!-- 注意：这里的 onclick 只负责翻转，openOverlay 会负责重置为正面 -->
                 <div class="flip-scene" onclick="event.stopPropagation(); archive.flipCard()">
                     <div class="flip-card" id="flip-card">
                         <div class="card-face card-front">
@@ -847,6 +858,7 @@
                 document.getElementById('showcase-title').textContent=item.name;
                 document.getElementById('showcase-desc').innerHTML=item.desc;
                 document.getElementById('showcase-secret').innerHTML=item.secret;
+                // 强制重置翻转状态为正面
                 document.getElementById('flip-card').classList.remove('flipped');
                 document.getElementById('overlay-detail').classList.add('active');
             },
