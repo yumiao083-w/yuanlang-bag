@@ -37,7 +37,8 @@
             height: 100vh;
             color: var(--text-main);
             -webkit-tap-highlight-color: transparent;
-            touch-action: none;
+            /* 保持全局禁止触摸，防止游戏时画面乱动 */
+            touch-action: none; 
         }
 
         /* --- 2. 加载屏幕 --- */
@@ -200,14 +201,8 @@
 
         /* 动画定义：上浮渐显 */
         @keyframes slideUpFade {
-            0% {
-                opacity: 0;
-                transform: translateY(25px); 
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0); 
-            }
+            0% { opacity: 0; transform: translateY(25px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
         /* 详情展示组件 */
@@ -217,18 +212,10 @@
             text-align: center; 
         }
         
-        /* 卡片先出 */
-        #overlay-detail.active .flip-scene {
-            animation: slideUpFade 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-            opacity: 0; 
-        }
-
-        /* 标题和文本同时出 */
+        /* 动画应用 */
+        #overlay-detail.active .flip-scene { animation: slideUpFade 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; opacity: 0; }
         #overlay-detail.active #showcase-title,
-        #overlay-detail.active .info-desc {
-            animation: slideUpFade 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) 0.15s forwards;
-            opacity: 0;
-        }
+        #overlay-detail.active .info-desc { animation: slideUpFade 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) 0.15s forwards; opacity: 0; }
 
         /* 剧情/介绍弹窗 */
         .modal-box {
@@ -405,16 +392,15 @@
             will-change: transform;
         }
 
-        /* 游戏掉落物 - 性能优化版 */
+        /* 游戏掉落物 (已放大) */
         .drop-item {
             position: absolute; 
-            width: 80px; /* 游戏图片放大 */
+            width: 80px;
             height: 80px; 
             object-fit: contain; 
             z-index: 52;
             pointer-events: none; 
             will-change: transform;
-            /* 减少重绘：使用 transform 而非 filter 做动画 */
         }
         
         .drop-item.danger { 
@@ -517,6 +503,7 @@
             display: block;
         }
         
+        /* 允许垂直滚动的关键CSS */
         .secret-content { 
             font-family: "Songti SC", "SimSun", serif; 
             font-size: 1.05rem;
@@ -528,9 +515,9 @@
             scrollbar-width: thin; 
             padding-top: 2px;
             margin-top: 30px;
-            touch-action: pan-y;
+            touch-action: pan-y; /* 修复滚动 */
+            -webkit-overflow-scrolling: touch;
             user-select: text;
-            -webkit-user-select: text;
         }
         
         .secret-content::-webkit-scrollbar {
@@ -555,6 +542,7 @@
             font-family: 'MainType'; 
         }
         
+        /* 允许垂直滚动的关键CSS */
         .info-desc { 
             margin-top: 10px; 
             font-size: 0.95rem; 
@@ -563,9 +551,9 @@
             overflow-y: auto; 
             text-align: left; 
             scrollbar-width: thin;
-            touch-action: pan-y;
+            touch-action: pan-y; /* 修复滚动 */
+            -webkit-overflow-scrolling: touch;
             user-select: text;
-            -webkit-user-select: text;
         }
         
         .info-desc::-webkit-scrollbar {
@@ -580,7 +568,7 @@
         /* 移动端适配 */
         @media (max-width: 600px) {
             #player-bag { width: 110px; }
-            .drop-item { width: 65px; height: 65px; } /* 移动端游戏物品尺寸 */
+            .drop-item { width: 80px; height: 80px; } /* 移动端游戏物品尺寸放大 */
             .modal-box { padding: 30px 20px; }
             .modal-title { font-size: 1.3rem; }
             .modal-desc { font-size: 1rem; }
@@ -682,13 +670,13 @@
     <script>
         // ==================== 配置 ====================
         const CONFIG = {
-            SPAWN_INTERVAL: 800,  // 略微增加生成间隔
+            SPAWN_INTERVAL: 800,  
             BASE_SPEED: 2.5, 
             GOOD_SCORE: 5, 
             BAD_PENALTY: 15, 
             WIN_THRESHOLD: 100,
             DRAG_THRESHOLD: 5,
-            MAX_DROP_ITEMS: 20  // 限制同屏最大掉落数
+            MAX_DROP_ITEMS: 20 
         };
 
         // ==================== 资源 ====================
@@ -713,6 +701,7 @@
             medical: "https://youke2.picui.cn/s1/2025/12/14/693d9e4fe3c88.jpg"
         };
 
+        // --- 提取并修正文案，使用中文引号 ---
         const sharedSecrets = {
             notebook: `有时忙着竞选演习，休假时，这本笔记本也会被随身带回家。<br>内容虽然重要，但不涉密，他默许你的翻阅，甚至会在某个角落留给你一个彩蛋。<br><br>也许是为唯一读者写下的便签，一篇充满心事的随笔，或是一句简单的念着你名字的“想你了”。<br>这是整本笔记里，唯一不含算计和阴谋的真心话。`,
             smoke: `正大光明的抽烟时间通常仅限于在基地。一到休假，袁朗离开的最后一件事，便是把脏物藏匿或者销毁。<br><br>不仅是因为你的约束，他也不希望你闻到任何硝烟，血腥，或是烟草气息。<br><br>比起尼古丁带来的片刻欢愉，他更贪恋把你拥进怀里，你不会皱眉推开他的那一刻。`,
@@ -818,7 +807,7 @@
                     }
                 };
                 
-                const up = () => {
+                const up = (e) => {
                     dragging = false;
                     el.classList.remove('dragging');
                     
@@ -828,6 +817,8 @@
                     document.removeEventListener('touchend', up);
                     
                     if (!moved) {
+                        // 关键修复：阻止 touchend 默认行为，防止 ghost click
+                        if(e.type === 'touchend') e.preventDefault();
                         this.openOverlay(itemData);
                     }
                 };
@@ -959,22 +950,23 @@
                 const title = document.getElementById('result-title');
                 const text = document.getElementById('result-text');
                 
+                // --- 修正并使用中文引号的游戏结局文案 ---
                 if (type === 'lose') {
                     title.textContent = "挑战失败";
-                    text.textContent = `袁朗看着包里越来越多的硬中华和打火机，挑眉笑了笑，伸手捉住了你的手腕，力道不大，但让你动弹不得。\n\n“行了首长，差不多得了。您这是搞后勤呢，还是打算谋杀亲夫啊？再装下去，我就不是去出任务，是去开烟草博览会了。”`;
+                    text.textContent = `袁朗看着包里越来越多的硬中华和打火机，嘴角抽了抽，赶紧止住了你的动作，“行了行了，够了啊。想谋杀亲夫直说，用不着这么破费。”`;
                 } else if (type === 'win_with_bad') {
                     title.textContent = "圆满完成";
-                    text.textContent = `袁朗掂了掂包的分量，听到里面打火机碰撞的脆响，眼底闪过一丝得逞的笑意。他顺势将包甩到肩后，一把将你揽进怀里用力揉了揉。\n\n“这就对了，我就知道还是自家人心疼我。那些规矩是给南瓜们定的，咱不理那个……走了,等我回来。”`;
+                    text.textContent = `袁朗接过包，眼睛扫过里面为数不多醒目的红色包装，把你拉到怀里，在你额头上落下一个吻，笑着说：“还是自家老婆会心疼人。放心，也就提神的时候抽两口，回来给你带好吃的。”`;
                 } else {
                     title.textContent = "完美行动";
-                    text.textContent = `袁朗接过包，都不用打开，光凭手感就知道里面“干净”得很。他啧了一声，凑到你跟前，手指不老实地去勾你的衣角。\n\n“太狠心了吧？真的连个火星子都不给带？……行行行，烟我不带了，那打火机通融通融？那可是我在吴哲那儿顺来的战利品，我不带身上，万一给他偷回去怎么办？那是原则问题。”`;
+                    text.textContent = `袁朗挑了挑眉，示意你好像遗漏了什么，发现你是故意的，凑近你耳边低声商量：“真的一包都不给带？”\n\n“……行，不带就不带，但这打火机你得让我带着，那真不是我的，是齐桓的，我顺手……借来的，总得还给人家吧？”`;
                 }
                 
                 document.getElementById('overlay-result').classList.add('active');
             }
         };
 
-        // ==================== 游戏核心逻辑模块（性能优化版）====================
+        // ==================== 游戏核心逻辑模块 ====================
         const game = {
             active: false,
             satisfaction: 30,
@@ -985,7 +977,7 @@
             playerY: 0,
             targetX: 0,
             targetY: 0,
-            items: [],  // 使用数组管理掉落物
+            items: [],
             lastSpawnTime: 0,
 
             setup: function() {
@@ -1049,7 +1041,6 @@
                 
                 const startX = Math.random() * (window.innerWidth - 80);
                 
-                // 使用 transform 而非 top 来提升性能
                 el.style.left = startX + 'px';
                 el.style.transform = 'translateY(-80px)';
                 
@@ -1069,36 +1060,29 @@
             gameLoop: function() {
                 if (!this.active) return;
                 
-                // 平滑移动玩家
                 this.playerX += (this.targetX - this.playerX) * 0.2;
                 this.playerY += (this.targetY - this.playerY) * 0.2;
                 
                 const bag = document.getElementById('player-bag');
-                
-                // 修复：保留bag的CSS translate(-50%, -50%) 居中设定，并修复了模板字符串的语法错误
                 bag.style.transform = `translate(${this.playerX - window.innerWidth/2}px, ${this.playerY - window.innerHeight*0.8}px) translate(-50%, -50%)`;
                 
                 const bagRect = bag.getBoundingClientRect();
                 const now = Date.now();
                 
-                // 定时生成掉落物
                 if (now - this.lastSpawnTime > CONFIG.SPAWN_INTERVAL) {
                     this.spawnItem();
                     this.lastSpawnTime = now;
                 }
                 
-                // 更新所有掉落物
                 for (let i = this.items.length - 1; i >= 0; i--) {
                     const item = this.items[i];
                     item.y += item.speed;
                     item.rotation += item.rotationSpeed;
                     
-                    // 使用 transform 更新位置
                     item.element.style.transform = `translateY(${item.y}px) rotate(${item.rotation}deg)`;
                     
                     const itemRect = item.element.getBoundingClientRect();
                     
-                    // 碰撞检测
                     if (this.checkCollision(bagRect, itemRect)) {
                         this.processItem(item.element.dataset.type);
                         item.element.remove();
@@ -1106,7 +1090,6 @@
                         continue;
                     }
                     
-                    // 移出屏幕
                     if (item.y > window.innerHeight + 80) {
                         item.element.remove();
                         this.items.splice(i, 1);
@@ -1162,7 +1145,6 @@
                     window.removeEventListener('touchmove', this.handleTouchMove);
                 }
                 
-                // 清理掉落物
                 this.items.forEach(item => item.element.remove());
                 this.items = [];
             },
