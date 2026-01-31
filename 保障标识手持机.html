@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>袁朗的保障标识手持机</title>
+    <!-- 引入 FontAwesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --case-color: #3f4a34;
+            --screen-bg: #e4e4d6;
+            --font-main: "FangSong", "SimSun", serif;
+            --font-key: "SimHei", "Heiti SC", sans-serif;
+            --sos-red: #8b0000;
+            --btn-green: #2e5e2e;
+            --btn-shadow: 0 3px 0 #111;
+            --btn-shadow-active: 0 1px 0 #111;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: var(--font-main);
+            user-select: none;
+        }
+
+        /* 设备外壳 */
+        .device-shell {
+            width: 360px;
+            height: 750px;
+            background-color: var(--case-color);
+            border-radius: 40px;
+            box-shadow: 
+                inset 4px 4px 10px rgba(255,255,255,0.2),
+                inset -4px -4px 10px rgba(0,0,0,0.6),
+                10px 10px 30px rgba(0,0,0,0.5),
+                0 0 0 4px #1a1a1a;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .bumper-top {
+            background-color: #1a1a1a;
+            height: 50px;
+            margin: -20px -20px 10px -20px;
+            border-radius: 36px 36px 0 0;
+            border-bottom: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .bumper-detail { width: 60px; height: 6px; background: #333; border-radius: 3px; }
+
+        .screen-container {
+            flex: 1;
+            background-color: var(--screen-bg);
+            border: 3px solid #111;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .status-bar {
+            background: linear-gradient(to bottom, #222, #000);
+            color: #fff;
+            padding: 4px 8px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: sans-serif;
+        }
+
+        .app-content { flex: 1; overflow-y: auto; display: none; padding: 0; }
+        .app-content.active { display: block; }
+
+        .nav-header {
+            background-color: #333;
+            color: #fff;
+            padding: 6px 10px;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 2px rgba(0,0,0,0.2);
+        }
+
+        .back-btn { cursor: pointer; color: #eee; }
+
+        /* 特效样式 */
+        .blur-secret { color: transparent; text-shadow: 0 0 8px rgba(0,0,0,0.5); filter: blur(2px); }
+        .photo-blur { filter: blur(6px); }
+
+        .photo-box {
+            width: 110px; height: 140px; background: #ccc;
+            border: 1px solid #666; margin: 15px auto;
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 表格与按钮通用 */
+        .info-table, .history-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 5px; background: #fff; }
+        .info-table td, .history-table td { border: 1px solid #888; padding: 8px 5px; }
+        .info-label { background: #e0e0e0; width: 95px; font-weight: bold; color: #333; }
+        .history-table th { background: #555; color: #fff; text-align: left; padding: 5px; }
+
+        .ticket-btn, .menu-btn {
+            background: #e6e6e6; border: 1px solid #999; border-radius: 4px;
+            padding: 12px 2px; text-align: center; font-size: 15px; font-weight: bold;
+            cursor: pointer; transition: background 0.1s;
+        }
+        .ticket-btn.selected { background: #444; color: #fff; box-shadow: inset 0 0 5px #000; }
+
+        .action-btn {
+            border: 1px solid rgba(0,0,0,0.2); border-radius: 6px; padding: 12px;
+            color: white; font-weight: bold; font-family: var(--font-main); font-size: 16px;
+            cursor: pointer; width: 100%;
+            box-shadow: var(--btn-shadow); transition: all 0.1s ease;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5); margin-bottom: 8px;
+        }
+        .action-btn:active { box-shadow: var(--btn-shadow-active); transform: translateY(3px) scale(0.98); }
+        .action-btn.disabled { background: #555 !important; color: #999; box-shadow: none; transform: translateY(3px); cursor: not-allowed; }
+
+        .btn-approve { background: var(--btn-green); border-bottom: 4px solid #1b3a1b; }
+        .btn-reject { background: #8b0000; border-bottom: 4px solid #500000; }
+        .btn-dispatch { background: #004d40; border-bottom: 4px solid #00251a; margin-top: 10px; }
+
+        /* 游戏界面特有样式 */
+        .game-dashboard {
+            background: #222; color: #fff; padding: 8px;
+            display: flex; justify-content: space-around;
+            border-bottom: 2px solid #000;
+            font-family: var(--font-key);
+        }
+        .stat-box { text-align: center; }
+        .stat-val { font-size: 18px; font-weight: bold; color: #0f0; }
+        .stat-val.danger { color: #f00; animation: blink 1s infinite; }
+
+        .game-scenario {
+            padding: 15px; background: #fff; border-bottom: 1px solid #999;
+            min-height: 120px; font-size: 15px; line-height: 1.8;
+        }
+        .game-scenario .dialogue {
+            display: block;
+            margin-top: 8px;
+            padding-left: 1em;
+            text-indent: -1em;
+            color: #333;
+            font-weight: bold;
+        }
+        .game-options { padding: 10px; }
+        .game-btn { background: #333; border-bottom: 4px solid #000; }
+
+        /* 模态框 */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 100;
+            display: none; justify-content: center; align-items: center;
+            padding: 20px;
+        }
+        .modal-box {
+            background: #f0f0f0; border: 2px solid #333; border-radius: 8px;
+            padding: 15px; width: 100%; max-height: 90%; overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #999; padding-bottom: 5px; }
+        .modal-content { margin-bottom: 15px; line-height: 1.8; font-size: 15px;}
+        .modal-content .dialogue {
+            display: block;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+
+        /* 键盘区 */
+        .keyboard-area { font-family: var(--font-key); padding: 0 10px; }
+        .func-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 15px; }
+        .led { width: 6px; height: 6px; border-radius: 50%; background: #222; border: 1px solid #555; }
+        .led.on { background: #0f0; box-shadow: 0 0 5px #0f0; border-color: #0f0; }
+
+        .btn-pill { height: 28px; background: #2a2a2a; border: 1px solid #444; color: #ccc; border-radius: 14px; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 0 #000; cursor: pointer; }
+        .btn-pill:active { transform: translateY(2px); box-shadow: none; }
+        .btn-scan { width: 90px; height: 32px; background: #222; color: #fff; border: 2px solid #555; border-radius: 16px; font-size: 14px; letter-spacing: 1px; }
+
+        .key-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr 1.2fr; gap: 8px 6px; }
+        .hard-key { background: #111; border: 1px solid #444; border-radius: 6px; color: #fff; height: 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 3px 0 #000; cursor: pointer; }
+        .hard-key:active { transform: translateY(3px); box-shadow: 0 0 0 #000; }
+        .key-main { font-size: 14px; font-weight: bold; line-height: 1; }
+        .key-sub { font-size: 9px; color: #888; margin-top: 2px; transform: scale(0.85); }
+        .key-pwr { color: #ff3333; }
+        .key-ent { grid-row: span 2; height: 80px; background: #1a1a1a; border-left: 2px solid #555; }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; }
+        .incoming-card { background: #fff; border: 2px solid #000; margin: 10px; padding: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); }
+        .incoming-header { background: #ddd; padding: 5px; border-bottom: 1px solid #999; font-weight: bold; display: flex; justify-content: space-between; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="device-shell">
+        <div class="bumper-top"><div class="bumper-detail"></div></div>
+
+        <div class="screen-container">
+            <div class="status-bar">
+                <span><i class="fas fa-signal"></i> 4G</span>
+                <span id="clock">14:30</span>
+                <span><i class="fas fa-battery-three-quarters"></i> 85%</span>
+            </div>
+
+            <div id="page-home" class="app-content active">
+                <div style="padding:8px; text-align:center; border-bottom:1px solid #999; background:#dcdcdc;">
+                    <strong>军人标识牌终端</strong>
+                </div>
+                <div class="menu-grid">
+                    <div class="ticket-btn menu-btn" onclick="nav('page-identity')">
+                        <i class="fas fa-id-card fa-2x" style="margin-bottom:5px;"></i><br>身份认证
+                    </div>
+                    <div class="ticket-btn menu-btn" onclick="nav('page-ticket')">
+                        <i class="fas fa-file-medical fa-2x" style="margin-bottom:5px;"></i><br>伤票填写
+                    </div>
+                    <div class="ticket-btn menu-btn" style="color:var(--sos-red);" onclick="nav('page-sos-receive')">
+                        <i class="fas fa-broadcast-tower fa-2x" style="margin-bottom:5px;"></i><br>呼救接收
+                    </div>
+                    <div class="ticket-btn menu-btn" onclick="nav('page-history')">
+                        <i class="fas fa-notes-medical fa-2x" style="margin-bottom:5px;"></i><br>健康档案
+                    </div>
+                    <div class="ticket-btn menu-btn" onclick="nav('page-supply-receive')">
+                        <i class="fas fa-parachute-box fa-2x" style="margin-bottom:5px;"></i><br>物资接收
+                    </div>
+                    <div class="ticket-btn menu-btn" style="color:#004d40;" onclick="startGame()">
+                        <i class="fas fa-hand-holding-medical fa-2x" style="margin-bottom:5px;"></i><br>救救袁朗
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-game" class="app-content">
+                <div class="nav-header">
+                    <span class="back-btn" onclick="quitGame()"><i class="fas fa-chevron-left"></i> 退出</span>
+                    <span>战伤救治模拟</span>
+                </div>
+                <div class="game-dashboard">
+                    <div class="stat-box">
+                        <div style="font-size:10px; color:#aaa;">生命值 HP</div>
+                        <div id="game-hp" class="stat-val">100</div>
+                    </div>
+                    <div class="stat-box">
+                        <div style="font-size:10px; color:#aaa;">心率 HR</div>
+                        <div id="game-hr" class="stat-val danger">120</div>
+                    </div>
+                </div>
+                <div id="game-text" class="game-scenario">载入中...</div>
+                <div id="game-options" class="game-options"></div>
+                <div id="game-modal" class="modal-overlay">
+                    <div class="modal-box">
+                        <div id="modal-title" class="modal-title">提示</div>
+                        <div id="modal-content" class="modal-content"></div>
+                        <div id="modal-buttons" style="display: flex; gap: 10px; justify-content: center;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-identity" class="app-content">
+                <div class="nav-header">
+                    <span class="back-btn" onclick="nav('page-home')"><i class="fas fa-chevron-left"></i> 返回</span>
+                    <span>人员身份档案</span>
+                    <span><i class="fas fa-lock"></i></span>
+                </div>
+                <div style="padding:10px;">
+                    <div class="photo-box">
+                        <img src="https://image.uglycat.cc/0uitcx.jpg" alt="证件照" class="photo-blur">
+                    </div>
+                    <table class="info-table">
+                        <tr><td class="info-label">姓名</td><td>袁朗</td></tr>
+                        <tr><td class="info-label">性别</td><td>男</td></tr>
+                        <tr><td class="info-label">民族</td><td>汉族</td></tr>
+                        <tr><td class="info-label">血型</td><td>A 型</td></tr>
+                        <tr><td class="info-label">所属单位</td><td>陆军特种作战大队<br>(A大队)</td></tr>
+                        <tr><td class="info-label">职务</td><td>三中队中队长</td></tr>
+                        <tr><td class="info-label">军衔</td><td>中校</td></tr>
+                        <tr><td class="info-label">出生日期</td><td class="blur-secret">1980-05-20</td></tr>
+                        <tr><td class="info-label">入伍时间</td><td class="blur-secret">1998-12-01</td></tr>
+                        <tr><td class="info-label">保障卡号</td><td>863249782</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div id="page-ticket" class="app-content">
+                <div class="nav-header">
+                    <span class="back-btn" onclick="nav('page-home')"><i class="fas fa-chevron-left"></i> 返回</span>
+                    <span>伤票填写</span>
+                    <span><i class="fas fa-save"></i></span>
+                </div>
+                <div class="ticket-grid-row" id="row-severity" style="display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid #999;">
+                    <div class="ticket-btn" data-val="危重">危重<br>死亡</div>
+                    <div class="ticket-btn" data-val="重度">重度</div>
+                    <div class="ticket-btn selected" data-val="中度">中度</div>
+                    <div class="ticket-btn" data-val="轻度">轻度</div>
+                </div>
+                <div class="ticket-grid-row" id="row-special" style="display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid #999;">
+                    <div class="ticket-btn" style="background:#bbb;" data-val="紧急处置">紧急<br>处置</div>
+                    <div class="ticket-btn selected" data-val="放射沾染">放射<br>沾染</div>
+                    <div class="ticket-btn" style="background:#bbb;" data-val="隔离">隔离</div>
+                    <div class="ticket-btn" style="background:#bbb;" data-val="染毒">染毒</div>
+                </div>
+                <div style="background-color:#d1d1a5; padding:10px; min-height:320px; font-size:15px; font-weight:bold;">
+                    <div style="display:flex; align-items:flex-end; margin-bottom:12px;">
+                        <span style="white-space:nowrap; margin-right:5px;">姓名:</span>
+                        <input type="text" style="flex:1; background:transparent; border:none; font-family:var(--font-main); font-size:16px; font-weight:bold; border-bottom:1px solid #000; outline:none; padding-left:5px;" value="袁朗" readonly>
+                        <span style="white-space:nowrap; margin:0 5px;">血型:</span>
+                        <input type="text" style="flex:0.3; background:transparent; border:none; font-family:var(--font-main); font-size:16px; font-weight:bold; border-bottom:1px solid #000; outline:none; padding-left:5px;" value="A" readonly>
+                    </div>
+                    <div style="display:flex; align-items:flex-end; margin-bottom:12px;">
+                        <span style="white-space:nowrap; margin-right:5px;">保障卡号:</span>
+                        <input type="text" style="flex:1; background:transparent; border:none; font-family:var(--font-main); font-size:16px; font-weight:bold; border-bottom:1px solid #000; outline:none; padding-left:5px;" value="863249782" readonly>
+                    </div>
+                    <div style="display:flex; align-items:flex-end; margin-top:15px;">
+                        <span style="white-space:nowrap; margin-right:5px;">伤情描述:</span>
+                        <input type="text" id="injury-input" style="flex:1; background:transparent; border:none; font-family:var(--font-main); font-size:16px; font-weight:bold; border-bottom:1px solid #000; outline:none; padding-left:5px; color:red;" value="中度 + 放射沾染">
+                    </div>
+                    <div style="margin-top:15px; border-top:1px dashed #555; padding-top:10px;">
+                        <span>过敏史:</span>
+                        <div style="font-size:14px; color:#555; line-height:2;">
+                            <div style="border-bottom:1px solid #777;">无</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-history" class="app-content">
+                <div class="nav-header">
+                    <span class="back-btn" onclick="nav('page-home')"><i class="fas fa-chevron-left"></i> 返回</span>
+                    <span>医疗健康档案</span>
+                </div>
+                <div style="padding:10px;">
+                    <div style="margin-bottom:15px;">
+                        <strong><i class="fas fa-notes-medical"></i> 既往病史</strong>
+                        <table class="history-table">
+                            <tr><th width="30%">时间</th><th>诊断/事件</th></tr>
+                            <tr><td class="blur-secret">2014-XX-XX</td><td>左臂贯穿性枪伤 (战伤)</td></tr>
+                            <tr><td class="blur-secret">2005-XX-XX</td><td>急性阑尾炎切除术</td></tr>
+                        </table>
+                    </div>
+                    <div>
+                        <strong><i class="fas fa-syringe"></i> 疫苗接种</strong>
+                        <table class="history-table">
+                            <tr><td class="blur-secret">2021-06</td><td>新冠病毒疫苗 (加强针)</td></tr>
+                            <tr><td class="blur-secret">2014-XX</td><td>破伤风抗毒素 (TAT)</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-sos-receive" class="app-content">
+                <div class="nav-header" style="background:#800000;">
+                    <span class="back-btn" onclick="nav('page-home')"><i class="fas fa-chevron-left"></i> 返回</span>
+                    <span>战场搜救系统</span>
+                </div>
+                <div style="padding:10px;">
+                    <div class="incoming-card" style="border-color:red;">
+                        <div class="incoming-header" style="background:#ffcccc; color:#800000;">
+                            <span><i class="fas fa-exclamation-circle"></i> 收到呼救信号</span>
+                            <span style="animation: blink 1s infinite;">SOS</span>
+                        </div>
+                        <div style="padding:5px;">
+                            <p><strong>呼救源 ID:</strong> 863249782</p>
+                            <p><strong>姓名:</strong> 袁朗 (中校)</p>
+                            <p><strong>性质:</strong> <span style="background:yellow;">演习测试</span></p>
+                            <hr style="border:1px dashed #ccc;">
+                            <p><strong>坐标定位:</strong></p>
+                            <div style="background:#eee; padding:5px; font-family:monospace;">
+                                N 23°36'12"<br>E 98°54'08"
+                            </div>
+                        </div>
+                    </div>
+                    <button id="btn-rescue" class="action-btn btn-dispatch" onclick="handleDispatch(this)">
+                        <i class="fas fa-helicopter"></i> 收到并派遣救援
+                    </button>
+                </div>
+            </div>
+
+            <div id="page-supply-receive" class="app-content">
+                <div class="nav-header" style="background:#003366;">
+                    <span class="back-btn" onclick="nav('page-home')"><i class="fas fa-chevron-left"></i> 返回</span>
+                    <span>后勤保障请求</span>
+                </div>
+                <div style="padding:10px;">
+                    <div class="incoming-card">
+                        <div class="incoming-header">
+                            <span><i class="fas fa-download"></i> 新的物资请求</span>
+                            <span id="supply-status-text">未处理</span>
+                        </div>
+                        <div style="padding:5px; font-size:14px;">
+                            <p><strong>申请人:</strong> 袁朗 (A大队)</p>
+                            <p><strong>备注:</strong> 野外驻训消耗补充</p>
+                            <div style="border:1px solid #999; padding:5px; margin-top:5px; background:#f9f9f9;">
+                                <ul style="margin:0; padding-left:20px;">
+                                    <li>5.8mm普通弹 x 120发</li>
+                                    <li>旋压止血带 x 2</li>
+                                    <li>吗啡针剂 x 1</li>
+                                    <li>A型血浆 (400ml) x 2</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:15px;" id="supply-actions">
+                        <button class="action-btn btn-approve" onclick="handleApprove()">批准</button>
+                        <button class="action-btn btn-reject" onclick="handleReject()">驳回</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="keyboard-area">
+            <div class="func-row">
+                <div class="led on"></div>
+                <button class="btn-pill" style="width:40px;">F1</button>
+                <button class="btn-pill btn-scan" onclick="nav('page-home')">SCAN</button>
+                <button class="btn-pill" style="width:40px;">F2</button>
+                <div class="led"></div>
+            </div>
+            <div class="key-grid">
+                <div class="hard-key"><span class="key-main">Tab</span></div>
+                <div class="hard-key"><span class="key-main">1</span><span class="key-sub">└┘</span></div>
+                <div class="hard-key"><span class="key-main">2</span><span class="key-sub">ABC</span></div>
+                <div class="hard-key"><span class="key-main">3</span><span class="key-sub">DEF</span></div>
+                <div class="hard-key key-pwr"><i class="fas fa-power-off"></i></div>
+                <div class="hard-key"><span class="key-main">Del</span><span class="key-sub">|<<</span></div>
+                <div class="hard-key"><span class="key-main">4</span><span class="key-sub">GHI</span></div>
+                <div class="hard-key"><span class="key-main">5</span><span class="key-sub">JKL</span></div>
+                <div class="hard-key"><span class="key-main">6</span><span class="key-sub">MNO</span></div>
+                <div class="hard-key key-ent"><span class="key-main">ENT</span><span class="key-sub">↵</span></div>
+                <div class="hard-key" onclick="nav('page-home')"><i class="fas fa-home"></i></div>
+                <div class="hard-key"><span class="key-main">7</span><span class="key-sub">PQRS</span></div>
+                <div class="hard-key"><span class="key-main">8</span><span class="key-sub">TUV</span></div>
+                <div class="hard-key"><span class="key-main">9</span><span class="key-sub">WXYZ</span></div>
+                <div class="hard-key"><span class="key-main">Fn</span></div>
+                <div class="hard-key"><span class="key-main">*</span><span class="key-sub">X-.,</span></div>
+                <div class="hard-key"><span class="key-main">0</span><span class="key-sub">_@</span></div>
+                <div class="hard-key"><span class="key-main">#</span><span class="key-sub">/+</span></div>
+                <div class="hard-key"><i class="fas fa-undo"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面导航
+        function nav(pageId) {
+            document.querySelectorAll('.app-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // 时钟更新
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = 
+                `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        }, 1000);
+
+        // 伤票逻辑
+        const rowSeverity = document.getElementById('row-severity');
+        const rowSpecial = document.getElementById('row-special');
+        const injuryInput = document.getElementById('injury-input');
+        let currentSeverity = "中度";
+        let currentSpecials = ["放射沾染"];
+
+        function updateInjuryInput() {
+            let text = currentSeverity;
+            if (currentSpecials.length > 0) text += " + " + currentSpecials.join(", ");
+            injuryInput.value = text;
+        }
+
+        if (rowSeverity) {
+            rowSeverity.querySelectorAll('.ticket-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    rowSeverity.querySelectorAll('.ticket-btn').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    currentSeverity = this.dataset.val;
+                    updateInjuryInput();
+                });
+            });
+        }
+
+        if (rowSpecial) {
+            rowSpecial.querySelectorAll('.ticket-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.classList.toggle('selected');
+                    const val = this.dataset.val;
+                    if (this.classList.contains('selected')) {
+                        if (!currentSpecials.includes(val)) currentSpecials.push(val);
+                    } else {
+                        currentSpecials = currentSpecials.filter(item => item !== val);
+                    }
+                    updateInjuryInput();
+                });
+            });
+        }
+
+        // 按钮交互
+        function handleDispatch(btn) {
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-check"></i> 已下达派遣指令';
+                btn.classList.add('disabled');
+                btn.onclick = null;
+            }, 150);
+        }
+
+        function handleApprove() {
+            setTimeout(() => {
+                document.getElementById('supply-status-text').innerHTML = "<span style='color:green'>已批准</span>";
+                document.getElementById('supply-actions').innerHTML = '<button class="action-btn disabled">已批准 / 正在发货</button>';
+            }, 150);
+        }
+
+        function handleReject() {
+            setTimeout(() => {
+                document.getElementById('supply-status-text').innerHTML = "<span style='color:red'>已驳回</span>";
+                document.getElementById('supply-actions').innerHTML = '<button class="action-btn disabled">已驳回</button>';
+            }, 150);
+        }
+
+        // ============================
+        // 游戏逻辑：救救袁朗
+        // ============================
+        let gameState = {
+            step: 0,
+            hp: 100,
+            hr: 120,
+            flirtCount: 0
+        };
+
+        const gameData = [
+            {
+                text: "【步骤一：意识与伤情判断】<br>模拟战场环境，袁朗左臂中弹，鲜血直流，脸色苍白，靠在掩体后。",
+                options: [
+                    { 
+                        text: "大声呼喊并拍打双肩", 
+                        type: "correct", 
+                        feedback: "袁朗笑得有点虚弱，眯起眼看你：<span class='dialogue'>“听到了……还活着。”</span>", 
+                        hp: 0 
+                    },
+                    { 
+                        text: "用力掐他人中", 
+                        type: "wrong", 
+                        feedback: "袁朗拍掉你的手，被气醒了，叹了口气：<span class='dialogue'>“你是救人还是谋杀？”</span>", 
+                        hp: -10 
+                    },
+                    { 
+                        text: "凑近耳边轻声呼唤", 
+                        type: "flirt", 
+                        feedback: "袁朗闭着眼睛，嘴角微微上扬，声音沙哑：<span class='dialogue'>“这招对伤员容易让其心率过速，不利于止血。”</span>", 
+                        hp: 0 
+                    },
+                    { 
+                        text: "直接做人工呼吸", 
+                        type: "prank", 
+                        feedback: "还没碰到，嘴就被他的手掌挡住了。<span class='dialogue'>“我伤的是手，不是肺，谢谢。”</span>", 
+                        hp: 0 
+                    }
+                ]
+            },
+            {
+                text: "【步骤二：止血】<br>左臂上臂贯穿伤，动脉出血，呈喷射状。",
+                options: [
+                    { 
+                        text: "使用旋压止血带，扎在伤口上方", 
+                        type: "correct", 
+                        feedback: "动作利索。他咬着牙吸了口凉气：<span class='dialogue'>“劲儿还挺大……不过位置对了。”</span>", 
+                        hp: 0 
+                    },
+                    { 
+                        text: "直接用手按住伤口", 
+                        type: "warning", 
+                        feedback: "<span class='dialogue'>“那是动脉血，你那点手劲按不住，找止血带！”</span><br>(生命值-10)", 
+                        hp: -10, 
+                        retry: true 
+                    },
+                    { 
+                        text: "撕开他的衣服查看伤口", 
+                        type: "flirt", 
+                        feedback: "你也不管止血，先粗暴地撕开了他的迷彩服。袁朗挑眉：<span class='dialogue'>“我很欣赏你的热情，但我的血快流干了，同志。”</span>", 
+                        hp: -10 
+                    },
+                    { 
+                        text: "用绳子死死勒住手腕", 
+                        type: "fatal", 
+                        feedback: "<span class='dialogue'>“你是想勒断我的手吗？？”</span><br>(生命值大幅下降)", 
+                        hp: -50 
+                    }
+                ]
+            },
+            {
+                text: "【步骤三：生命体征监测】<br>血止住了，但人有点晕眩，需要确认脉搏和呼吸。",
+                options: [
+                    { 
+                        text: "触摸颈动脉", 
+                        type: "correct", 
+                        feedback: "你把手指搭在他脖颈处，脉搏急促有力。他的喉结滚动：<span class='dialogue'>“怎么样？暂时还死不了。”</span>", 
+                        hp: 0 
+                    },
+                    { 
+                        text: "摸摸额头看发不发烧", 
+                        type: "wrong", 
+                        feedback: "袁朗有点没脾气地把你的手拿下来：<span class='dialogue'>“……额头没有脉搏，换个地儿。”</span>", 
+                        hp: -5 
+                    },
+                    { 
+                        text: "把手伸进防弹衣里摸胸口", 
+                        type: "flirt", 
+                        feedback: "你的手贴在他温热的胸肌上，袁朗沉沉地笑一声，带着胸口在振动：<span class='dialogue'>“手感还行吧？”</span>", 
+                        hp: 0 
+                    },
+                    { 
+                        text: "摸摸腹肌确认……腹部呼吸？", 
+                        type: "prank", 
+                        feedback: "袁朗无奈地按住你在他肚子上乱摸的手：<span class='dialogue'>“第一次见这种确认方式，受教了。”</span>", 
+                        hp: 0 
+                    }
+                ]
+            },
+            {
+                text: "【步骤四：包扎与防感染】<br>止血带已上好，需要处理创面。",
+                options: [
+                    { 
+                        text: "撒止血粉，填塞纱布，加压包扎", 
+                        type: "correct", 
+                        feedback: "非常专业。他看着你熟练的动作，诚恳地夸赞：<span class='dialogue'>“动作够专业啊，以前练过？”</span>", 
+                        hp: 0 
+                    },
+                    { 
+                        text: "倒一壶水上去清洗伤口", 
+                        type: "wrong", 
+                        feedback: "袁朗制止了你的动作。<span class='dialogue'>“这是野外生水，不干净。”</span><br>(感染风险 HP-20)", 
+                        hp: -20 
+                    },
+                    { 
+                        text: "打个漂亮的蝴蝶结", 
+                        type: "prank", 
+                        feedback: "你最后在绷带上系了个完美的蝴蝶结。袁朗举起手看了看，无奈苦笑：<span class='dialogue'>“很有创意。希望能吓死敌人。”</span>", 
+                        hp: 0 
+                    }
+                ]
+            },
+            {
+                text: "【步骤五：安抚与后送】<br>处理完毕，等待救援直升机。他疼得满头冷汗。",
+                options: [
+                    { 
+                        text: "注射吗啡", 
+                        type: "correct", 
+                        feedback: "他眼神开始涣散：<span class='dialogue'>“谢了……这下舒服多了。”</span>", 
+                        hp: 0 
+                    },
+                    { 
+                        text: "给他点一根烟", 
+                        type: "flirt", 
+                        feedback: "你把烟塞进他嘴里，没给火。他叼着烟，苍白的脸上露出了那标志性的狡黠笑容：<span class='dialogue'>“这比吗啡管用。”</span>", 
+                        hp: 0 
+                    },
+                    { 
+                        text: "告诉他：“不是老A吗？忍着吧，袁队长。”", 
+                        type: "wrong", 
+                        feedback: "<span class='dialogue'>“你把我当神仙了？我也是肉长的。”</span>", 
+                        hp: -5 
+                    }
+                ]
+            }
+        ];
+
+        // Fisher-Yates 随机洗牌算法
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function startGame() {
+            gameState = { step: 0, hp: 100, hr: 120, flirtCount: 0 };
+            nav('page-game');
+            updateStats();
+            showModal(
+                "救救袁朗", 
+                "你和袁朗聊到受伤的事情，他本来想轻描淡写带过，却被你缠着问到底，于是想出了一个小游戏转移你的注意力。<br><br>他似笑非笑地指了指自己左臂那道陈旧的贯穿伤疤：<span class='dialogue'>“既然这么好奇，那要是你在场，这胳膊能不能保住，就看你了。试试？”</span>",
+                ["放马过来", "算了不玩"], 
+                (choice) => {
+                    if (choice === 0) renderStep();
+                    else nav('page-home');
+                }
+            );
+        }
+
+        function updateStats() {
+            const hpEl = document.getElementById('game-hp');
+            const hrEl = document.getElementById('game-hr');
+            hpEl.innerText = gameState.hp;
+            hpEl.style.color = gameState.hp > 50 ? '#0f0' : '#f00';
+            
+            let targetHr = Math.max(70, 120 - gameState.step * 10);
+            gameState.hr = targetHr;
+            hrEl.innerText = gameState.hr;
+            if (targetHr > 100) {
+                hrEl.classList.add('danger');
+            } else {
+                hrEl.classList.remove('danger');
+            }
+        }
+
+        function renderStep() {
+            if (gameState.hp <= 0) {
+                endGame("dead");
+                return;
+            }
+            if (gameState.step >= gameData.length) {
+                endGame("success");
+                return;
+            }
+
+            const data = gameData[gameState.step];
+            document.getElementById('game-text').innerHTML = data.text;
+            
+            const btnContainer = document.getElementById('game-options');
+            btnContainer.innerHTML = '';
+            
+            // 复制选项数组并打乱顺序，实现每次选项位置随机
+            let stepOptions = [...data.options];
+            shuffleArray(stepOptions);
+
+            stepOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'action-btn game-btn';
+                btn.innerHTML = opt.text;
+                btn.onclick = () => handleChoice(opt);
+                btnContainer.appendChild(btn);
+            });
+
+            updateStats();
+        }
+
+        function handleChoice(option) {
+            gameState.hp += option.hp;
+            if (option.type === 'flirt' || option.type === 'prank') {
+                gameState.flirtCount++;
+            }
+            
+            updateStats();
+
+            showModal("反馈", option.feedback, ["继续"], () => {
+                if (!option.retry) gameState.step++;
+                renderStep();
+            });
+        }
+
+        function endGame(status) {
+            let title = "游戏结束";
+            let content = "";
+            
+            if (status === "dead" || gameState.hp <= 0) {
+                content = "<strong>【结局 B：庸医误人】</strong><br><br>袁朗评价：<span class='dialogue'>“卒。享年30岁。死因：被某人笨死的。明年的今日记得给我烧点烟。”</span>";
+            } else if (gameState.flirtCount >= 3) {
+                content = "<strong>【结局 C：心怀不轨】</strong><br><br>袁朗评价：<span class='dialogue'>“命是保住了，就是你这救人的过程……有点独特。”</span>";
+            } else {
+                content = "<strong>【结局 A：王牌军医】</strong><br><br>袁朗评价：<span class='dialogue'>“够专业的，战场上要是遇上你能多活个几十年。”</span>";
+            }
+
+            showModal(title, content, ["退出游戏"], () => nav('page-home'));
+        }
+
+        function quitGame() {
+            if (confirm("确定退出当前救援模拟吗？")) {
+                nav('page-home');
+            }
+        }
+
+        // 模态框控制
+        function showModal(title, text, buttons, callback) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-content').innerHTML = text;
+            
+            const btnContainer = document.getElementById('modal-buttons');
+            btnContainer.innerHTML = '';
+            
+            buttons.forEach((btnText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'action-btn game-btn';
+                btn.style.width = 'auto';
+                btn.style.minWidth = '80px';
+                btn.innerText = btnText;
+                btn.onclick = () => {
+                    document.getElementById('game-modal').style.display = 'none';
+                    if (callback) callback(idx);
+                };
+                btnContainer.appendChild(btn);
+            });
+            
+            document.getElementById('game-modal').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
